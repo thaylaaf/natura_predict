@@ -249,3 +249,75 @@ app.get('/admins', verificarToken, async (req: any, res: Response) => {
     res.status(500).json({ erro: "Erro ao buscar administradores." });
   }
 });
+
+// 🔍 ROTA DE BUSCA GLOBAL: Pesquisa o termo em qualquer coluna do banco
+app.get('/public/substances/suggestions', async (req: Request, res: Response) => {
+  try {
+    const { termo } = req.query;
+
+    if (!termo) {
+      return res.json([]); // Retorna lista vazia se não houver pesquisa
+    }
+
+    const busca = String(termo);
+
+    const resultados = await prisma.substances.findMany({
+      where: {
+        OR: [
+          { nome: { contains: busca, mode: 'insensitive' } },
+          { nome_quimico: { contains: busca, mode: 'insensitive' } },
+          { formula_molecular: { contains: busca, mode: 'insensitive' } },
+          { smile: { contains: busca, mode: 'insensitive' } },
+          { propriedades_farmacologicas: { contains: busca, mode: 'insensitive' } },
+          { origem: { contains: busca, mode: 'insensitive' } },
+          { uso_tradicional: { contains: busca, mode: 'insensitive' } },
+        ]
+      },
+      select: {
+        id: true,
+        nome: true,
+        origem: true,
+        // Incluímos um "resumo" para o usuário saber por que aquele item apareceu
+        propriedades_farmacologicas: true 
+      },
+      take: 10 // Mostra até 10 resultados por vez
+    });
+
+    res.json(resultados);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: "Erro ao realizar busca." });
+  }
+});
+
+// 📄 ROTA 2: Ficha Técnica (O que aparece quando o usuário clica em uma planta)
+app.get('/public/substances/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const substancia = await prisma.substances.findUnique({
+      where: { id: Number(id) }
+    });
+
+    if (!substancia) {
+      return res.status(404).json({ erro: "Substância não encontrada." });
+    }
+
+    // Retorna todos os dados obrigatórios que você configurou
+    res.json(substancia);
+  } catch (error) {
+    res.status(500).json({ erro: "Erro ao buscar detalhes." });
+  }
+});
+
+// 📚 ROTA 3: Catálogo Geral (Para listar tudo na página inicial do site)
+app.get('/public/substances', async (req: Request, res: Response) => {
+  try {
+    const todas = await prisma.substances.findMany({
+      orderBy: { nome: 'asc' } // Organiza de A a Z
+    });
+    res.json(todas);
+  } catch (error) {
+    res.status(500).json({ erro: "Erro ao listar catálogo." });
+  }
+});
