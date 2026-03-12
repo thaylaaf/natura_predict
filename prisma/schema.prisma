@@ -1,0 +1,40 @@
+// Este é o arquivo prisma/schema.prisma
+
+// Define o "motor" do Prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Aponta para o seu banco de dados (usando a senha do .env)
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------
+// AQUI COMEÇA A SUA LÓGICA
+// ------------------------------------------
+
+// Modelo (Tabela) de Administradores
+model admins {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  email         String   @unique
+  senha         String
+  nivel         String   @default("administrador")
+  created_at    DateTime @default(now())
+}
+
+// Modelo (Tabela) de Substâncias
+model substances {
+  id                           Int      @id @default(autoincrement())
+  nome                         String   // Ex: "Morfina" (Nome popular ou principal)
+  nome_quimico                 String?  // O '?' significa que é opcional
+  formula_molecular            String?
+  smile                        String?  // SMILES string
+  propriedades_farmacologicas  String?
+  origem                       String?
+  uso_tradicional              String?
+  created_at                   DateTime @default(now())
+  updated_at                   DateTime @updatedAt
+}
