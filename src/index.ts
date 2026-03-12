@@ -115,6 +115,43 @@ app.post('/substances', verificarToken, async (req: any, res: Response) => {
   }
 });
 
+// Rota para editar substância: usa o ID na URL e o Token para segurança
+app.put('/substances/:id', verificarToken, async (req: any, res: Response) => {
+  try {
+    const { id } = req.params; // Pega o ID da planta (ex: 3 para o Guaco)
+    
+    // Pegamos os campos que podem ser editados
+    const { 
+      nome, 
+      nome_quimico, 
+      formula_molecular, 
+      smile, 
+      propriedades_farmacologicas, 
+      origem, 
+      uso_tradicional 
+    } = req.body;
+
+    // Atualizamos no banco de dados usando o Prisma
+    const substanciaAtualizada = await prisma.substances.update({
+      where: { id: Number(id) },
+      data: {
+        nome,
+        nome_quimico,
+        formula_molecular,
+        smile,
+        propriedades_farmacologicas,
+        origem,
+        uso_tradicional
+      },
+    });
+
+    res.json({ mensagem: "Substância atualizada com sucesso!", dados: substanciaAtualizada });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ erro: "Erro ao atualizar. Verifique se o ID existe ou se os campos estão corretos." });
+  }
+});
+
 // Rota para deletar: usa o ID da URL e o Token de quem está logado
 app.delete('/substances/:id', verificarToken, async (req: any, res: Response) => {
   try {
