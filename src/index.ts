@@ -95,6 +95,15 @@ app.post('/substances', verificarToken, async (req: any, res: Response) => {
       uso_tradicional 
     } = req.body;
 
+    // NOVA VALIDAÇÃO: Verifica se algum campo está faltando ou vazio
+    if (!nome || !nome_quimico || !formula_molecular || !smile || 
+        !propriedades_farmacologicas || !origem || !uso_tradicional) {
+      
+      return res.status(400).json({ 
+        erro: "Todos os campos devem ser preenchidos." 
+      });
+    }
+
     // 2. Criamos no banco usando o Prisma
     const novaSubstancia = await prisma.substances.create({
       data: {

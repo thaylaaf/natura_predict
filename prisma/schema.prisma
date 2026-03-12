@@ -29,12 +29,12 @@ model admins {
 model substances {
   id                           Int      @id @default(autoincrement())
   nome                         String   // Ex: "Morfina" (Nome popular ou principal)
-  nome_quimico                 String?  // O '?' significa que é opcional
-  formula_molecular            String?
-  smile                        String?  // SMILES string
-  propriedades_farmacologicas  String?
-  origem                       String?
-  uso_tradicional              String?
+  nome_quimico                 String
+  formula_molecular            String
+  smile                        String  // SMILES string
+  propriedades_farmacologicas  String
+  origem                       String
+  uso_tradicional              String
   created_at                   DateTime @default(now())
   updated_at                   DateTime @updatedAt
 }
