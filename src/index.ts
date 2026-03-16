@@ -318,6 +318,6 @@ app.get('/public/substances', async (req: Request, res: Response) => {
     });
     res.json(todas);
   } catch (error) {
-    res.status(500).json({ erro: "Erro ao listar catálogo." });
+    res.status(500).json({ erro: "Erro ao listar PNs." });
   }
 });
