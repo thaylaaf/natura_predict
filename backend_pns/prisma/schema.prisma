@@ -16,13 +16,14 @@ datasource db {
 // ------------------------------------------
 
 // Modelo (Tabela) de Administradores
-model admins {
-  id            Int      @id @default(autoincrement())
-  nome          String
-  email         String   @unique
-  senha         String
-  nivel         String   @default("administrador")
-  created_at    DateTime @default(now())
+model Admins {
+  id              Int      @id @default(autoincrement())
+  email           String   @unique
+  nome            String?  // O "?" permite que comece vazio (null)
+  senha           String?  // O "?" permite que comece vazio (null)
+  nivel           String   // "super_administrador" ou "administrador"
+  token_ativacao  String?  @unique
+  created_at      DateTime @default(now())
 }
 
 // Modelo (Tabela) de Substâncias

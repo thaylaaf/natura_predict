@@ -19,7 +19,7 @@ app.use(express.json());
 // Importa o PrismaClient
 import { PrismaClient } from '@prisma/client';
 
-// Cria a instância do Prisma e do Express
+// Volte para o modo simples
 const prisma = new PrismaClient();
 const port = 3000;
 
