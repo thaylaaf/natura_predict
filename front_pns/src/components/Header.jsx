@@ -1,5 +1,6 @@
 import React from 'react';
 import logo from '../assets/logo_predict.png'; 
+import { Link } from 'react-router-dom';
 
 const Header = () => {
   return (
@@ -28,12 +29,9 @@ const Header = () => {
     >
       SOBRE
     </a>
-        <a
-      href="/sobre"
-      className="text-white no-underline text-base font-light tracking-wide transition hover:underline"
-    >
-      LOGIN
-    </a>
+    <Link to="/login" className="text-white hover:underline">
+     LOGIN
+    </Link>
   </nav>
 </header>
 
