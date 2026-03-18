@@ -3,6 +3,7 @@ import SearchContainer from './containers/SearchContainer';
 import MoleculeDisplay from './components/MoleculeDisplay';
 import Home from './pages/Home';
 import Login from './pages/Login/index';
+import PainelControle from './pages/PainelControle';
 
 // Importe seu Header e Footer aqui (ajuste o caminho se necessário)
 import Header from './components/Header'; 
@@ -19,6 +20,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/PainelControle" element={<PainelControle />} />
             <Route path="/substance/:id" element={<MoleculeDisplay />} />
           </Routes>
         </main>

@@ -45,6 +45,11 @@ app.post('/login', async (req: Request, res: Response) => {
     }
 
     // 3. Verifica se a senha bate com o que está no banco
+    // Mude a linha 48 para isso:
+    if (!admin || !admin.senha) {
+      return res.status(401).json({ erro: "Credenciais inválidas." });
+    }
+
     const senhaValida = await bcrypt.compare(senha, admin.senha);
 
     if (!senhaValida) {
@@ -255,16 +260,21 @@ app.get('/admins', verificarToken, async (req: any, res: Response) => {
   }
 });
 
-// 🔍 ROTA DE BUSCA GLOBAL: Pesquisa o termo em qualquer coluna do banco
+// 🔍 ROTA DE BUSCA GLOBAL ATUALIZADA
 app.get('/public/substances/suggestions', async (req: Request, res: Response) => {
   try {
     const { termo } = req.query;
 
     if (!termo) {
-      return res.json([]); // Retorna lista vazia se não houver pesquisa
+      return res.json([]);
     }
 
-    const busca = String(termo);
+    // 1. O .trim() remove espaços inúteis no início e no fim (ex: " Cerrado " -> "Cerrado")
+    // 2. Mantemos o espaço interno para que frases como "Cerrado Brasileiro" funcionem
+    const busca = String(termo).trim();
+    if (busca.length === 0) {
+      return res.json([]);
+    }
 
     const resultados = await prisma.substances.findMany({
       where: {
@@ -282,15 +292,14 @@ app.get('/public/substances/suggestions', async (req: Request, res: Response) =>
         id: true,
         nome: true,
         origem: true,
-        // Incluímos um "resumo" para o usuário saber por que aquele item apareceu
         propriedades_farmacologicas: true 
       },
-      take: 10 // Mostra até 10 resultados por vez
+      take: 10
     });
 
     res.json(resultados);
   } catch (error) {
-    console.error(error);
+    console.error("Erro na busca:", error);
     res.status(500).json({ erro: "Erro ao realizar busca." });
   }
 });

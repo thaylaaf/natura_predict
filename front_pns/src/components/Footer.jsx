@@ -27,7 +27,7 @@ const Footer = () => {
             Universidade Federal de Sergipe
           </p>
           <p className="text-base">
-            Contato xxxxxxxxxxxxxxx
+            LAAB - Laboratório de Alimentos e Bebidas
           </p>
           <p className="text-base ">
             São Cristóvão, Sergipe, Brasil
