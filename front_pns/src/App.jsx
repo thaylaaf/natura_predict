@@ -2,8 +2,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import SearchContainer from './containers/SearchContainer';
 import MoleculeDisplay from './components/MoleculeDisplay';
 import Home from './pages/Home';
-import Login from './pages/Login/index';
+import Login from './pages/login/index';
 import PainelControle from './pages/PainelControle';
+import Navegacao from './pages/Navegacao';
 
 // Importe seu Header e Footer aqui (ajuste o caminho se necessário)
 import Header from './components/Header'; 
@@ -22,6 +23,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/PainelControle" element={<PainelControle />} />
             <Route path="/substance/:id" element={<MoleculeDisplay />} />
+            <Route path="/Navegacao" element={<Navegacao />} />
           </Routes>
         </main>
 

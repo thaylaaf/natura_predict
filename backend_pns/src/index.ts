@@ -100,14 +100,15 @@ app.post('/substances', verificarToken, async (req: any, res: Response) => {
       nome_quimico, 
       formula_molecular, 
       smile, 
-      propriedades_farmacologicas, 
+      propriedades_fisico_quimicas, 
+      atividade_biologica,
       origem, 
       uso_tradicional 
     } = req.body;
 
     // NOVA VALIDAÇÃO: Verifica se algum campo está faltando ou vazio
     if (!nome || !nome_quimico || !formula_molecular || !smile || 
-        !propriedades_farmacologicas || !origem || !uso_tradicional) {
+        !propriedades_fisico_quimicas || !atividade_biologica || !origem || !uso_tradicional) {
       
       return res.status(400).json({ 
         erro: "Todos os campos devem ser preenchidos." 
@@ -121,7 +122,8 @@ app.post('/substances', verificarToken, async (req: any, res: Response) => {
         nome_quimico,
         formula_molecular,
         smile,
-        propriedades_farmacologicas,
+        propriedades_fisico_quimicas,
+        atividade_biologica,
         origem,
         uso_tradicional
       },
@@ -145,7 +147,8 @@ app.put('/substances/:id', verificarToken, async (req: any, res: Response) => {
       nome_quimico, 
       formula_molecular, 
       smile, 
-      propriedades_farmacologicas, 
+      propriedades_fisico_quimicas, 
+      atividade_biologica,
       origem, 
       uso_tradicional 
     } = req.body;
@@ -158,7 +161,8 @@ app.put('/substances/:id', verificarToken, async (req: any, res: Response) => {
         nome_quimico,
         formula_molecular,
         smile,
-        propriedades_farmacologicas,
+        propriedades_fisico_quimicas,
+        atividade_biologica,
         origem,
         uso_tradicional
       },
@@ -283,7 +287,8 @@ app.get('/public/substances/suggestions', async (req: Request, res: Response) =>
           { nome_quimico: { contains: busca, mode: 'insensitive' } },
           { formula_molecular: { contains: busca, mode: 'insensitive' } },
           { smile: { contains: busca, mode: 'insensitive' } },
-          { propriedades_farmacologicas: { contains: busca, mode: 'insensitive' } },
+          { propriedades_fisico_quimicas: { contains: busca, mode: 'insensitive' } },
+          { atividade_biologica: { contains: busca, mode: 'insensitive' } },
           { origem: { contains: busca, mode: 'insensitive' } },
           { uso_tradicional: { contains: busca, mode: 'insensitive' } },
         ]
@@ -292,7 +297,7 @@ app.get('/public/substances/suggestions', async (req: Request, res: Response) =>
         id: true,
         nome: true,
         origem: true,
-        propriedades_farmacologicas: true 
+        propriedades_fisico_quimicas: true 
       },
       take: 10
     });

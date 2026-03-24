@@ -33,7 +33,8 @@ model substances {
   nome_quimico                 String
   formula_molecular            String
   smile                        String  // SMILES string
-  propriedades_farmacologicas  String
+  propriedades_fisico_quimicas String
+  atividade_biologica          String
   origem                       String
   uso_tradicional              String
   created_at                   DateTime @default(now())

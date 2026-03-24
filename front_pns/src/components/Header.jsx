@@ -30,7 +30,7 @@ const Header = () => {
 
       <nav className="flex gap-12 items-center">
         <Link
-          to="/"
+          to="/navegacao"
           className="text-white no-underline text-base font-light tracking-wide transition hover:underline"
         >
           NAVEGAR POR ATIVOS

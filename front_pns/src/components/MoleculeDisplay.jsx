@@ -13,7 +13,6 @@ const MoleculeDisplay = () => {
     const fetchMoleculeData = async () => {
       try {
         setIsLoading(true);
-        // Busca os dados reais no seu backend
         const response = await axios.get(`http://localhost:3000/public/substances/${id}`);
         setMoleculeData(response.data);
       } catch (err) {
@@ -41,10 +40,10 @@ const MoleculeDisplay = () => {
   return (
     <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-5xl mx-auto my-10 border border-gray-100">
       <button 
-        onClick={() => navigate('/')} 
+        onClick={() => navigate(-1)} 
         className="text-[#0F7A73] mb-6 hover:font-bold transition-all flex items-center gap-2"
       >
-        ← Voltar para a pesquisa
+        ← Voltar
       </button>
 
       <div className="border-b-4 border-[#0F7A73] mb-8 pb-4">
@@ -56,7 +55,7 @@ const MoleculeDisplay = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Lado Esquerdo: Identificação Química */}
+        {/* Lado Esquerdo: Identificação e Química */}
         <div className="space-y-6">
           <section className="bg-slate-50 p-5 rounded-lg border-l-4 border-teal-500">
             <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Fórmula Molecular</h2>
@@ -71,16 +70,21 @@ const MoleculeDisplay = () => {
           </section>
 
           <section className="bg-slate-50 p-5 rounded-lg border-l-4 border-teal-500">
-            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Origem / Ocorrência</h2>
-            <p className="text-gray-700 leading-relaxed">{moleculeData.origem}</p>
+            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Propriedades Físico-Químicas</h2>
+            <p className="text-gray-700 leading-relaxed">{moleculeData.propriedades_fisico_quimicas}</p>
           </section>
         </div>
 
-        {/* Lado Direito: Informações Biológicas */}
+        {/* Lado Direito: Biologia e Uso */}
         <div className="space-y-6">
           <section className="bg-teal-50 p-5 rounded-lg border-l-4 border-[#0F7A73]">
-            <h2 className="text-sm font-bold text-[#0F7A73] uppercase tracking-widest mb-2">Propriedades Farmacológicas</h2>
-            <p className="text-gray-700 leading-relaxed">{moleculeData.propriedades_farmacologicas}</p>
+            <h2 className="text-sm font-bold text-[#0F7A73] uppercase tracking-widest mb-2">Atividade Biológica</h2>
+            <p className="text-gray-700 leading-relaxed font-medium">{moleculeData.atividade_biologica}</p>
+          </section>
+
+          <section className="bg-teal-50 p-5 rounded-lg border-l-4 border-[#0F7A73]">
+            <h2 className="text-sm font-bold text-[#0F7A73] uppercase tracking-widest mb-2">Origem / Ocorrência</h2>
+            <p className="text-gray-700 leading-relaxed">{moleculeData.origem}</p>
           </section>
 
           <section className="bg-teal-50 p-5 rounded-lg border-l-4 border-[#0F7A73]">

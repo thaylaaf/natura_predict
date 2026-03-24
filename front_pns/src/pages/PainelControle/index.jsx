@@ -18,7 +18,8 @@ function PainelControle() {
     nome_quimico: '',
     formula_molecular: '',
     smile: '',
-    propriedades_farmacologicas: '',
+    propriedades_fisico_quimicas: '', // Nome atualizado
+    atividade_biologica: '',          // Campo novo
     origem: '',
     uso_tradicional: ''
   });
@@ -68,7 +69,7 @@ function PainelControle() {
     } catch (error) { alert("Erro ao editar."); }
   };
 
-  // ✨ SALVAR NOVO CADASTRO (POST)
+  // ➕ SALVAR NOVO CADASTRO (POST)
   const handleSaveNew = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
@@ -78,7 +79,12 @@ function PainelControle() {
       });
       alert("Substância cadastrada com sucesso!");
       setIsAdding(false);
-      setNewSubstance({ nome: '', nome_quimico: '', formula_molecular: '', smile: '', propriedades_farmacologicas: '', origem: '', uso_tradicional: '' });
+      // Reset do formulário com os novos campos
+      setNewSubstance({ 
+        nome: '', nome_quimico: '', formula_molecular: '', smile: '', 
+        propriedades_fisico_quimicas: '', atividade_biologica: '', 
+        origem: '', uso_tradicional: '' 
+      });
       fetchSubstances();
     } catch (error) {
       alert(error.response?.data?.erro || "Erro ao cadastrar. Verifique os campos.");
@@ -99,9 +105,7 @@ function PainelControle() {
         </button>
       </div>
 
-      {/* ----------------------------------------------------------- */}
-      {/* MODAL DE CADASTRO (POST) */}
-      {/* ----------------------------------------------------------- */}
+      {/* MODAL DE CADASTRO */}
       {isAdding && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <form onSubmit={handleSaveNew} className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-2xl space-y-4 my-8">
@@ -113,7 +117,8 @@ function PainelControle() {
               <input placeholder="SMILE" className="border p-2 rounded" onChange={(e) => setNewSubstance({...newSubstance, smile: e.target.value})} required />
             </div>
             <input placeholder="Origem / Família" className="w-full border p-2 rounded" onChange={(e) => setNewSubstance({...newSubstance, origem: e.target.value})} required />
-            <textarea placeholder="Propriedades Farmacológicas" className="w-full border p-2 rounded h-20" onChange={(e) => setNewSubstance({...newSubstance, propriedades_farmacologicas: e.target.value})} required />
+            <textarea placeholder="Propriedades Físico-Químicas" className="w-full border p-2 rounded h-20" onChange={(e) => setNewSubstance({...newSubstance, propriedades_fisico_quimicas: e.target.value})} required />
+            <textarea placeholder="Atividade Biológica" className="w-full border p-2 rounded h-20" onChange={(e) => setNewSubstance({...newSubstance, atividade_biologica: e.target.value})} required />
             <textarea placeholder="Uso Tradicional" className="w-full border p-2 rounded h-20" onChange={(e) => setNewSubstance({...newSubstance, uso_tradicional: e.target.value})} required />
             <div className="flex space-x-3 pt-4 border-t">
               <button type="submit" className="flex-1 bg-teal-700 text-white font-bold py-2 rounded">Cadastrar</button>
@@ -123,9 +128,7 @@ function PainelControle() {
         </div>
       )}
 
-      {/* ----------------------------------------------------------- */}
-      {/* MODAL DE EDIÇÃO (PUT) */}
-      {/* ----------------------------------------------------------- */}
+      {/* MODAL DE EDIÇÃO */}
       {isEditing && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <form onSubmit={handleSaveEdit} className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-2xl space-y-4 my-8">
@@ -137,7 +140,8 @@ function PainelControle() {
               <input className="border p-2 rounded" value={currentSubstance.smile} onChange={(e) => setCurrentSubstance({...currentSubstance, smile: e.target.value})} />
             </div>
             <input className="w-full border p-2 rounded" value={currentSubstance.origem} onChange={(e) => setCurrentSubstance({...currentSubstance, origem: e.target.value})} />
-            <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.propriedades_farmacologicas} onChange={(e) => setCurrentSubstance({...currentSubstance, propriedades_farmacologicas: e.target.value})} />
+            <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.propriedades_fisico_quimicas} onChange={(e) => setCurrentSubstance({...currentSubstance, propriedades_fisico_quimicas: e.target.value})} />
+            <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.atividade_biologica} onChange={(e) => setCurrentSubstance({...currentSubstance, atividade_biologica: e.target.value})} />
             <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.uso_tradicional} onChange={(e) => setCurrentSubstance({...currentSubstance, uso_tradicional: e.target.value})} />
             <div className="flex space-x-3 pt-4 border-t">
               <button type="submit" className="flex-1 bg-teal-700 text-white font-bold py-2 rounded">Salvar Alterações</button>
