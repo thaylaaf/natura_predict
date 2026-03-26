@@ -4,33 +4,38 @@ import { useNavigate } from 'react-router-dom';
 
 function Login() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState(''); // Mantive o nome password que você já usava
-  const [error, setError] = useState(''); // Para exibir mensagens de erro na tela
+  const [password, setPassword] = useState(''); 
+  const [error, setError] = useState(''); 
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Limpa erros antes de tentar
+    setError(''); 
 
     try {
-      // Faz a chamada para o seu backend (index.ts)
       const response = await axios.post('http://localhost:3000/login', {
         email: email,
-        senha: password // Aqui enviamos 'password' para o campo 'senha' do backend
+        senha: password 
       });
 
-      // Se chegar aqui, o login deu certo!
-      const { token, nome } = response.data;
+      // 1. Capturamos o 'mudar_senha' que vem do backend atualizado
+      const { token, nome, nivel, mudar_senha } = response.data;
 
-      // Guarda os dados para usar em outras páginas
+      // 2. Guardamos os dados no localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('usuarioNome', nome);
+      localStorage.setItem('nivel', nivel);
 
-      // Redireciona para a página inicial
-      navigate('/PainelControle');
+      // 3. Lógica de Redirecionamento:
+      if (mudar_senha === true) {
+        // Se for o primeiro acesso, manda para definir nova senha
+        navigate('/DefinirSenha'); 
+      } else {
+        // Se já mudou a senha antes, vai para o painel normal
+        navigate('/PainelControle');
+      }
       
     } catch (err) {
-      // Se o backend retornar erro (401, 500, etc)
       const mensagemErro = err.response?.data?.erro || 'Erro ao conectar ao servidor';
       setError(mensagemErro);
     }
@@ -44,7 +49,6 @@ function Login() {
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
               Acesse o <span className="text-teal-700">NaturaPREDICT</span>
             </h2>
-            {/* Exibe o erro se ele existir */}
             {error && <p className="mt-2 text-center text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
           </div>
           

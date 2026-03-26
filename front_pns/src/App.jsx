@@ -5,6 +5,8 @@ import Home from './pages/Home';
 import Login from './pages/login/index';
 import PainelControle from './pages/PainelControle';
 import Navegacao from './pages/Navegacao';
+import DefinirSenha from './pages/DefinirSenha';
+import GerenciarUsuarios from './pages/GerenciarUsuarios';
 
 // Importe seu Header e Footer aqui (ajuste o caminho se necessário)
 import Header from './components/Header'; 
@@ -24,6 +26,8 @@ function App() {
             <Route path="/PainelControle" element={<PainelControle />} />
             <Route path="/substance/:id" element={<MoleculeDisplay />} />
             <Route path="/Navegacao" element={<Navegacao />} />
+            <Route path="/DefinirSenha" element={<DefinirSenha />} />
+            <Route path="/usuarios" element={<GerenciarUsuarios />} />
           </Routes>
         </main>
 

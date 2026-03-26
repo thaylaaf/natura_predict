@@ -35,12 +35,7 @@ const Header = () => {
         >
           NAVEGAR POR ATIVOS
         </Link>
-        <Link
-          to="/sobre"
-          className="text-white no-underline text-base font-light tracking-wide transition hover:underline"
-        >
-          SOBRE
-        </Link>
+
 
         {/* LÓGICA DE MUDANÇA DO BOTÃO */}
         {isLogado ? (

@@ -1,341 +1,234 @@
-
-
 import bcrypt from 'bcrypt';
-// Importa o "dotenv" para carregar o .env
 import jwt from 'jsonwebtoken';
-///importa o token
 import * as dotenv from 'dotenv';
-dotenv.config(); // Isso "lê" o seu .env e o prepara
-
-// Importa o Express e os tipos (Request, Response)
 import express, { Request, Response } from 'express';
-
 import cors from 'cors';
-
-const app = express();
-app.use(cors()); // <--- ESSA LINHA É OBRIGATÓRIA
-app.use(express.json());
-
-// Importa o PrismaClient
 import { PrismaClient } from '@prisma/client';
 
-// Volte para o modo simples
+dotenv.config();
+
+const app = express();
 const prisma = new PrismaClient();
 const port = 3000;
 
-// Configura o Express para "entender" JSON
+app.use(cors());
 app.use(express.json());
 
-// Manda o servidor "ligar"
-app.listen(port, () => {
-  console.log(`Servidor TS rodando em http://localhost:${port}`);
-});
-
-// Rota de Login: A "recepção" do seu prédio
-app.post('/login', async (req: Request, res: Response) => {
-  try {
-    const { email, senha } = req.body;
-
-    // 1. Procura o administrador pelo e-mail
-    const admin = await prisma.admins.findUnique({ where: { email } });
-
-    // 2. Se não achar o e-mail ou a senha estiver errada
-    if (!admin) {
-      return res.status(401).json({ erro: "Credenciais inválidas." });
-    }
-
-    // 3. Verifica se a senha bate com o que está no banco
-    // Mude a linha 48 para isso:
-    if (!admin || !admin.senha) {
-      return res.status(401).json({ erro: "Credenciais inválidas." });
-    }
-
-    const senhaValida = await bcrypt.compare(senha, admin.senha);
-
-    if (!senhaValida) {
-      return res.status(401).json({ erro: "Credenciais inválidas." });
-    }
-
-    // 4. Cria o "Crachá Digital" (Token) assinado com sua Chave Secreta
-    const token = jwt.sign(
-      { id: admin.id, nivel: admin.nivel }, // Informações salvas dentro do token
-      process.env.JWT_SECRET as string,     // Sua chave do .env
-      { expiresIn: '1d' }                   // O token expira em 1 dia
-    );
-
-    // 5. Devolve o token para o usuário
-    res.json({ token, nome: admin.nome, nivel: admin.nivel });
-  } catch (error) {
-    res.status(500).json({ erro: "Erro no servidor." });
-  }
-});
-
-// Middleware: O "Segurança" que verifica o crachá
+// --- MIDDLEWARE DE SEGURANÇA ---
 const verificarToken = (req: any, res: any, next: any) => {
-  const token = req.headers['authorization']?.split(' ')[1]; // Pega o token do cabeçalho
+  const token = req.headers['authorization']?.split(' ')[1];
 
   if (!token) {
     return res.status(401).json({ erro: "Acesso negado. Faça login primeiro." });
   }
 
   try {
-    // Verifica se o token foi assinado com a nossa chave secreta
     const dadosVerificados = jwt.verify(token, process.env.JWT_SECRET as string) as any;
-    
-    // Salva os dados do usuário dentro da requisição para as próximas funções usarem
     req.usuarioLogado = dadosVerificados; 
-    
-    next(); // "Pode passar!"
+    next();
   } catch (err) {
     res.status(403).json({ erro: "Token inválido ou expirado." });
   }
 };
 
-// rota de cadastro de substancia 
-app.post('/substances', verificarToken, async (req: any, res: Response) => {
-  try {
-    const { 
-      nome, 
-      nome_quimico, 
-      formula_molecular, 
-      smile, 
-      propriedades_fisico_quimicas, 
-      atividade_biologica,
-      origem, 
-      uso_tradicional 
-    } = req.body;
+// --- ROTAS DE AUTENTICAÇÃO ---
 
-    // Verifica se algum campo está faltando ou vazio
-    if (!nome || !nome_quimico || !formula_molecular || !smile || 
-        !propriedades_fisico_quimicas || !atividade_biologica || !origem || !uso_tradicional) {
-      
+// Login
+app.post('/login', async (req: Request, res: Response) => {
+  try {
+    const { email, senha } = req.body;
+    const admin = await prisma.admins.findUnique({ where: { email } });
+
+    if (!admin || !admin.senha) {
+      return res.status(401).json({ erro: "Credenciais inválidas." });
+    }
+
+    const senhaValida = await bcrypt.compare(senha, admin.senha);
+    if (!senhaValida) {
+      return res.status(401).json({ erro: "Credenciais inválidas." });
+    }
+
+    const token = jwt.sign(
+      { id: admin.id, nivel: admin.nivel },
+      process.env.JWT_SECRET as string,
+      { expiresIn: '1d' }
+    );
+
+    // Retorna se o usuário precisa mudar a senha
+    res.json({ 
+      token, 
+      nome: admin.nome, 
+      nivel: admin.nivel,
+      mudar_senha: admin.mudar_senha 
+    });
+  } catch (error) {
+    res.status(500).json({ erro: "Erro no servidor." });
+  }
+});
+
+// Define o padrão: Mínimo 6 caracteres, 1 Maiúscula, 1 Número e 1 Especial
+const senhaForteRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+={}\[\]:;<>|./?-]).{6,}$/;
+
+// --- ROTA DE ATUALIZAÇÃO (Onde o usuário muda a senha dele) ---
+app.put('/auth/atualizar-senha', verificarToken, async (req: any, res: Response) => {
+  try {
+    const { novaSenha } = req.body;
+    const userId = req.usuarioLogado.id;
+
+    // VALIDACÃO CRUCIAL AQUI
+    if (!senhaForteRegex.test(novaSenha)) {
       return res.status(400).json({ 
-        erro: "Todos os campos devem ser preenchidos." 
+        erro: "Senha fraca! Use pelo menos 6 caracteres, uma letra maiúscula, um número e um caractere especial." 
       });
     }
 
-    // 2. Criamos no banco usando o Prisma
-    const novaSubstancia = await prisma.substances.create({
+    const salt = await bcrypt.genSalt(10);
+    const senhaHash = await bcrypt.hash(novaSenha, salt);
+
+    await prisma.admins.update({
+      where: { id: Number(userId) }, // Garanta que o ID seja um número
       data: {
-        nome,
-        nome_quimico,
-        formula_molecular,
-        smile,
-        propriedades_fisico_quimicas,
-        atividade_biologica,
-        origem,
-        uso_tradicional
-      },
+        senha: senhaHash,
+        mudar_senha: false
+      }
     });
 
-    res.status(201).json(novaSubstancia);
+    res.json({ mensagem: "Senha atualizada com sucesso!" });
   } catch (error) {
-    console.error(error);
-    res.status(400).json({ erro: 'Falha ao cadastrar substância. Verifique os campos enviados.' });
+    res.status(500).json({ erro: "Erro ao atualizar senha." });
   }
 });
 
-// Rota para editar substância: usa o ID na URL e o Token para segurança
-app.put('/substances/:id', verificarToken, async (req: any, res: Response) => {
+// --- GESTÃO DE USUÁRIOS (ADMINS) ---
+
+// Listar Admins (Apenas Super Admin)
+app.get('/admins', verificarToken, async (req: any, res: Response) => {
   try {
-    const { id } = req.params; // Pega o ID da planta (ex: 3 para o Guaco)
-    
-    // Pegamos os campos que podem ser editados
-    const { 
-      nome, 
-      nome_quimico, 
-      formula_molecular, 
-      smile, 
-      propriedades_fisico_quimicas, 
-      atividade_biologica,
-      origem, 
-      uso_tradicional 
-    } = req.body;
-
-    // Atualizamos no banco de dados usando o Prisma
-    const substanciaAtualizada = await prisma.substances.update({
-      where: { id: Number(id) },
-      data: {
-        nome,
-        nome_quimico,
-        formula_molecular,
-        smile,
-        propriedades_fisico_quimicas,
-        atividade_biologica,
-        origem,
-        uso_tradicional
-      },
-    });
-
-    res.json({ mensagem: "Substância atualizada com sucesso!", dados: substanciaAtualizada });
-  } catch (error) {
-    console.error(error);
-    res.status(400).json({ erro: "Erro ao atualizar. Verifique se o ID existe ou se os campos estão corretos." });
-  }
-});
-
-// Rota para deletar: usa o ID da URL e o Token de quem está logado
-app.delete('/substances/:id', verificarToken, async (req: any, res: Response) => {
-  try {
-    const { id } = req.params; // Pega o "1" da URL /substances/1
-
-    await prisma.substances.delete({
-      where: { id: Number(id) },
-    });
-
-    res.json({ mensagem: "Substância removida com sucesso!" });
-  } catch (error) {
-    console.error(error);
-    res.status(400).json({ erro: "Erro ao remover substância. Verifique se o ID existe." });
-  }
-});
-
-//rota para cadastro de administrador, só o super admin faz
-app.post('/admins', verificarToken, async (req: any, res: Response) => {
-  try {
-    // 1. Não pegamos mais o idDoSolicitante do body!
-    const { nome, email, senha, nivel } = req.body;
-
-    // 2. Trava de segurança: Usamos o nível que veio direto do crachá (Token)
-    if (req.usuarioLogado.nivel !== 'super_administrador') {
-      return res.status(403).json({ erro: "Acesso negado. Apenas super_admins criam usuários." });
-    }
-
-    const senhaCriptografada = await bcrypt.hash(senha, 10);
-
-    const novoAdmin = await prisma.admins.create({
-      data: {
-        nome,
-        email,
-        senha: senhaCriptografada,
-        nivel: nivel || "administrador"
-      },
-    });
-
-    const { senha: _, ...adminSemSenha } = novoAdmin;
-    res.status(201).json(adminSemSenha);
-
-  } catch (error) {
-    res.status(400).json({ erro: 'Falha ao cadastrar administrador.' });
-  }
-});
-
-// Rota para remover um administrador (Apenas super_administrador)
-app.delete('/admins/:id', verificarToken, async (req: any, res: Response) => {
-  try {
-    // 🛡️ Trava de segurança: só super_administrador deleta pessoas
     if (req.usuarioLogado.nivel !== 'super_administrador') {
       return res.status(403).json({ erro: "Acesso negado." });
     }
 
-    const { id } = req.params;
-    await prisma.admins.delete({ where: { id: Number(id) } });
-
-    res.json({ mensagem: "Administrador removido!" });
-  } catch (error) {
-    res.status(400).json({ erro: "Erro ao remover administrador." });
-  }
-});
-
-
-
-// rota para listar todos os administradores para gerenciamento
-app.get('/admins', verificarToken, async (req: any, res: Response) => {
-  try {
-    // Opcional: Você pode travar para que só o super_admin veja a lista completa
-    if (req.usuarioLogado.nivel !== 'super_administrador') {
-      return res.status(403).json({ erro: "Apenas super_admins podem listar usuários." });
-    }
-
     const todosAdmins = await prisma.admins.findMany({
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        nivel: true, // Adicionado para você saber quem é quem
-        created_at: true,
-      }
+      select: { id: true, nome: true, email: true, nivel: true, mudar_senha: true, created_at: true }
     });
-
     res.json(todosAdmins);
   } catch (error) {
     res.status(500).json({ erro: "Erro ao buscar administradores." });
   }
 });
 
-// 🔍 ROTA DE BUSCA GLOBAL ATUALIZADA
+// Cadastrar Novo Admin com Senha Genérica
+app.post('/admins', verificarToken, async (req: any, res: Response) => {
+  try {
+    const { nome, email, nivel } = req.body;
+
+    if (req.usuarioLogado.nivel !== 'super_administrador') {
+      return res.status(403).json({ erro: "Acesso negado." });
+    }
+
+    const existe = await prisma.admins.findUnique({ where: { email } });
+    if (existe) return res.status(400).json({ erro: "E-mail já cadastrado." });
+
+    const senhaGenerica = "Mudar@123";
+    const salt = await bcrypt.genSalt(10);
+    const senhaHash = await bcrypt.hash(senhaGenerica, salt);
+
+    const novo = await prisma.admins.create({
+      data: {
+        nome,
+        email,
+        senha: senhaHash,
+        nivel: nivel || "administrador",
+        mudar_senha: true
+      }
+    });
+
+    res.status(201).json({ 
+      mensagem: "Admin cadastrado!", 
+      senha_temporaria: senhaGenerica,
+      id: novo.id 
+    });
+  } catch (error) {
+    res.status(500).json({ erro: "Erro ao cadastrar administrador." });
+  }
+});
+
+// Deletar Admin
+app.delete('/admins/:id', verificarToken, async (req: any, res: Response) => {
+  try {
+    if (req.usuarioLogado.nivel !== 'super_administrador') {
+      return res.status(403).json({ erro: "Acesso negado." });
+    }
+    await prisma.admins.delete({ where: { id: Number(req.params.id) } });
+    res.json({ mensagem: "Administrador removido!" });
+  } catch (error) {
+    res.status(400).json({ erro: "Erro ao remover administrador." });
+  }
+});
+
+// --- GESTÃO DE SUBSTÂNCIAS ---
+
+app.post('/substances', verificarToken, async (req: any, res: Response) => {
+  try {
+    const data = req.body;
+    const nova = await prisma.substances.create({ data });
+    res.status(201).json(nova);
+  } catch (error) {
+    res.status(400).json({ erro: 'Erro ao cadastrar substância.' });
+  }
+});
+
+app.put('/substances/:id', verificarToken, async (req: any, res: Response) => {
+  try {
+    const atualizada = await prisma.substances.update({
+      where: { id: Number(req.params.id) },
+      data: req.body
+    });
+    res.json(atualizada);
+  } catch (error) {
+    res.status(400).json({ erro: "Erro ao atualizar." });
+  }
+});
+
+app.delete('/substances/:id', verificarToken, async (req: any, res: Response) => {
+  try {
+    await prisma.substances.delete({ where: { id: Number(req.params.id) } });
+    res.json({ mensagem: "Removida!" });
+  } catch (error) {
+    res.status(400).json({ erro: "Erro ao remover." });
+  }
+});
+
+// --- ROTAS PÚBLICAS ---
+
+app.get('/public/substances', async (req, res) => {
+  const todas = await prisma.substances.findMany({ orderBy: { nome: 'asc' } });
+  res.json(todas);
+});
+
+app.get('/public/substances/:id', async (req, res) => {
+  const sub = await prisma.substances.findUnique({ where: { id: Number(req.params.id) } });
+  sub ? res.json(sub) : res.status(404).json({ erro: "Não encontrada." });
+});
+
 app.get('/public/substances/suggestions', async (req: Request, res: Response) => {
-  try {
-    const { termo } = req.query;
+  const { termo } = req.query;
+  const busca = String(termo || "").trim();
+  if (!busca) return res.json([]);
 
-    if (!termo) {
-      return res.json([]);
-    }
-
-    // 1. O .trim() remove espaços inúteis no início e no fim (ex: " Cerrado " -> "Cerrado")
-    // 2. Mantemos o espaço interno para que frases como "Cerrado Brasileiro" funcionem
-    const busca = String(termo).trim();
-    if (busca.length === 0) {
-      return res.json([]);
-    }
-
-    const resultados = await prisma.substances.findMany({
-      where: {
-        OR: [
-          { nome: { contains: busca, mode: 'insensitive' } },
-          { nome_quimico: { contains: busca, mode: 'insensitive' } },
-          { formula_molecular: { contains: busca, mode: 'insensitive' } },
-          { smile: { contains: busca, mode: 'insensitive' } },
-          { propriedades_fisico_quimicas: { contains: busca, mode: 'insensitive' } },
-          { atividade_biologica: { contains: busca, mode: 'insensitive' } },
-          { origem: { contains: busca, mode: 'insensitive' } },
-          { uso_tradicional: { contains: busca, mode: 'insensitive' } },
-        ]
-      },
-      select: {
-        id: true,
-        nome: true,
-        origem: true,
-        propriedades_fisico_quimicas: true 
-      },
-      take: 10
-    });
-
-    res.json(resultados);
-  } catch (error) {
-    console.error("Erro na busca:", error);
-    res.status(500).json({ erro: "Erro ao realizar busca." });
-  }
+  const resultados = await prisma.substances.findMany({
+    where: {
+      OR: [
+        { nome: { contains: busca, mode: 'insensitive' } },
+        { nome_quimico: { contains: busca, mode: 'insensitive' } },
+        { origem: { contains: busca, mode: 'insensitive' } },
+      ]
+    },
+    take: 10
+  });
+  res.json(resultados);
 });
 
-// 📄 ROTA 2: Ficha Técnica (O que aparece quando o usuário clica em uma planta)
-app.get('/public/substances/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    const substancia = await prisma.substances.findUnique({
-      where: { id: Number(id) }
-    });
-
-    if (!substancia) {
-      return res.status(404).json({ erro: "Substância não encontrada." });
-    }
-
-    // Retorna todos os dados obrigatórios que você configurou
-    res.json(substancia);
-  } catch (error) {
-    res.status(500).json({ erro: "Erro ao buscar detalhes." });
-  }
-});
-
-// 📚 ROTA 3: Catálogo Geral (Para listar tudo na página inicial do site)
-app.get('/public/substances', async (req: Request, res: Response) => {
-  try {
-    const todas = await prisma.substances.findMany({
-      orderBy: { nome: 'asc' } // Organiza de A a Z
-    });
-    res.json(todas);
-  } catch (error) {
-    res.status(500).json({ erro: "Erro ao listar PNs." });
-  }
+app.listen(port, () => {
+  console.log(`Servidor rodando em http://localhost:${port}`);
 });

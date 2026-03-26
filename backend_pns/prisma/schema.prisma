@@ -22,6 +22,7 @@ model Admins {
   nome            String?  // O "?" permite que comece vazio (null)
   senha           String?  // O "?" permite que comece vazio (null)
   nivel           String   // "super_administrador" ou "administrador"
+  mudar_senha     Boolean  @default(true) 
   token_ativacao  String?  @unique
   created_at      DateTime @default(now())
 }

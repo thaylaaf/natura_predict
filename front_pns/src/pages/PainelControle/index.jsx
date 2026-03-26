@@ -18,16 +18,30 @@ function PainelControle() {
     nome_quimico: '',
     formula_molecular: '',
     smile: '',
-    propriedades_fisico_quimicas: '', // Nome atualizado
-    atividade_biologica: '',          // Campo novo
+    propriedades_fisico_quimicas: '', 
+    atividade_biologica: '',          
     origem: '',
     uso_tradicional: ''
+  });
+
+  // --- ESTADOS PARA ADMINISTRADORES ---
+  const [isAddingAdmin, setIsAddingAdmin] = useState(false);
+  const [nivelUsuarioLogado, setNivelUsuarioLogado] = useState('');
+  const [newAdmin, setNewAdmin] = useState({
+    nome: '',
+    email: '',
+    nivel: 'administrador'
   });
 
   // 🛡️ SEGURANÇA
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) navigate('/login');
+    const nivel = localStorage.getItem('nivel');
+    if (!token) {
+      navigate('/login');
+    } else {
+      setNivelUsuarioLogado(nivel);
+    }
   }, [navigate]);
 
   // 🔍 BUSCA
@@ -56,7 +70,7 @@ function PainelControle() {
     } catch (error) { alert("Erro ao remover."); }
   };
 
-  // 📝 SALVAR EDIÇÃO (PUT)
+  // 📝 SALVAR EDIÇÃO
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
@@ -69,7 +83,7 @@ function PainelControle() {
     } catch (error) { alert("Erro ao editar."); }
   };
 
-  // ➕ SALVAR NOVO CADASTRO (POST)
+  // ➕ SALVAR NOVO CADASTRO
   const handleSaveNew = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
@@ -79,7 +93,6 @@ function PainelControle() {
       });
       alert("Substância cadastrada com sucesso!");
       setIsAdding(false);
-      // Reset do formulário com os novos campos
       setNewSubstance({ 
         nome: '', nome_quimico: '', formula_molecular: '', smile: '', 
         propriedades_fisico_quimicas: '', atividade_biologica: '', 
@@ -87,7 +100,30 @@ function PainelControle() {
       });
       fetchSubstances();
     } catch (error) {
-      alert(error.response?.data?.erro || "Erro ao cadastrar. Verifique os campos.");
+      alert(error.response?.data?.erro || "Erro ao cadastrar.");
+    }
+  };
+
+  // --- FUNÇÃO AJUSTADA PARA NOVA LÓGICA (SEM EMAIL) ---
+  const handleSaveNewAdmin = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    try {
+      // Chamada para o backend atualizado
+      const response = await axios.post('http://localhost:3000/admins', newAdmin, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Pega a senha temporária que o backend retornou
+      const senhaTemp = response.data.senha_temporaria;
+
+      // Alerta ajustado para mostrar a senha na tela
+      alert(`Usuário cadastrado com sucesso!\n\nSenha temporária: ${senhaTemp}\n\nInforme esta senha ao novo administrador.`);
+      
+      setIsAddingAdmin(false);
+      setNewAdmin({ nome: '', email: '', nivel: 'administrador' });
+    } catch (error) {
+      alert(error.response?.data?.erro || "Erro ao cadastrar administrador.");
     }
   };
 
@@ -97,15 +133,69 @@ function PainelControle() {
     <div className="p-8 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold text-gray-800">Painel de Controle</h1>
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition"
-        >
-          + Nova Substância
-        </button>
+        <div className="flex space-x-3">
+          {nivelUsuarioLogado === 'super_administrador' && (
+              <>
+                <button 
+                  onClick={() => navigate('/usuarios')} 
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm"
+                >
+                  Ver Usuários
+                </button>
+                <button 
+                  onClick={() => setIsAddingAdmin(true)}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm"
+                >
+                  + Novo Administrador
+                </button>
+              </>
+            )}
+            <button 
+              onClick={() => setIsAdding(true)}
+              className="bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition shadow-sm"
+            >
+              + Nova Substância
+            </button>
+          </div>
       </div>
 
-      {/* MODAL DE CADASTRO */}
+      {/* MODAL DE CADASTRO DE ADMINISTRADOR (Interface original preservada) */}
+      {isAddingAdmin && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <form onSubmit={handleSaveNewAdmin} className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md space-y-4">
+            <h2 className="text-xl font-bold text-indigo-700 border-b pb-2">Cadastrar Novo Administrador</h2>
+            <div className="space-y-3">
+              <input 
+                placeholder="Nome do Usuário" 
+                className="w-full border p-2 rounded" 
+                onChange={(e) => setNewAdmin({...newAdmin, nome: e.target.value})} 
+                required 
+              />
+              <input 
+                type="email" 
+                placeholder="E-mail Institucional" 
+                className="w-full border p-2 rounded" 
+                onChange={(e) => setNewAdmin({...newAdmin, email: e.target.value})} 
+                required 
+              />
+              <select 
+                className="w-full border p-2 rounded bg-white"
+                value={newAdmin.nivel}
+                onChange={(e) => setNewAdmin({...newAdmin, nivel: e.target.value})}
+              >
+                <option value="administrador">Administrador</option>
+                <option value="super_administrador">Super Administrador</option>
+              </select>
+            </div>
+            <div className="flex space-x-3 pt-4 border-t">
+              <button type="submit" className="flex-1 bg-indigo-600 text-white font-bold py-2 rounded">Finalizar Cadastro</button>
+              <button type="button" onClick={() => setIsAddingAdmin(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL DE CADASTRO DE SUBSTÂNCIA */}
       {isAdding && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <form onSubmit={handleSaveNew} className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-2xl space-y-4 my-8">
@@ -123,29 +213,6 @@ function PainelControle() {
             <div className="flex space-x-3 pt-4 border-t">
               <button type="submit" className="flex-1 bg-teal-700 text-white font-bold py-2 rounded">Cadastrar</button>
               <button type="button" onClick={() => setIsAdding(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* MODAL DE EDIÇÃO */}
-      {isEditing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <form onSubmit={handleSaveEdit} className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-2xl space-y-4 my-8">
-            <h2 className="text-xl font-bold text-teal-700 border-b pb-2">Editar Substância</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input className="border p-2 rounded" value={currentSubstance.nome} onChange={(e) => setCurrentSubstance({...currentSubstance, nome: e.target.value})} />
-              <input className="border p-2 rounded" value={currentSubstance.nome_quimico} onChange={(e) => setCurrentSubstance({...currentSubstance, nome_quimico: e.target.value})} />
-              <input className="border p-2 rounded" value={currentSubstance.formula_molecular} onChange={(e) => setCurrentSubstance({...currentSubstance, formula_molecular: e.target.value})} />
-              <input className="border p-2 rounded" value={currentSubstance.smile} onChange={(e) => setCurrentSubstance({...currentSubstance, smile: e.target.value})} />
-            </div>
-            <input className="w-full border p-2 rounded" value={currentSubstance.origem} onChange={(e) => setCurrentSubstance({...currentSubstance, origem: e.target.value})} />
-            <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.propriedades_fisico_quimicas} onChange={(e) => setCurrentSubstance({...currentSubstance, propriedades_fisico_quimicas: e.target.value})} />
-            <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.atividade_biologica} onChange={(e) => setCurrentSubstance({...currentSubstance, atividade_biologica: e.target.value})} />
-            <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.uso_tradicional} onChange={(e) => setCurrentSubstance({...currentSubstance, uso_tradicional: e.target.value})} />
-            <div className="flex space-x-3 pt-4 border-t">
-              <button type="submit" className="flex-1 bg-teal-700 text-white font-bold py-2 rounded">Salvar Alterações</button>
-              <button type="button" onClick={() => setIsEditing(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
             </div>
           </form>
         </div>
@@ -175,6 +242,29 @@ function PainelControle() {
           </tbody>
         </table>
       </div>
+
+      {/* MODAL DE EDIÇÃO */}
+      {isEditing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <form onSubmit={handleSaveEdit} className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-2xl space-y-4 my-8">
+            <h2 className="text-xl font-bold text-teal-700 border-b pb-2">Editar Substância</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input className="border p-2 rounded" value={currentSubstance.nome} onChange={(e) => setCurrentSubstance({...currentSubstance, nome: e.target.value})} />
+              <input className="border p-2 rounded" value={currentSubstance.nome_quimico} onChange={(e) => setCurrentSubstance({...currentSubstance, nome_quimico: e.target.value})} />
+              <input className="border p-2 rounded" value={currentSubstance.formula_molecular} onChange={(e) => setCurrentSubstance({...currentSubstance, formula_molecular: e.target.value})} />
+              <input className="border p-2 rounded" value={currentSubstance.smile} onChange={(e) => setCurrentSubstance({...currentSubstance, smile: e.target.value})} />
+            </div>
+            <input className="w-full border p-2 rounded" value={currentSubstance.origem} onChange={(e) => setCurrentSubstance({...currentSubstance, origem: e.target.value})} />
+            <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.propriedades_fisico_quimicas} onChange={(e) => setCurrentSubstance({...currentSubstance, propriedades_fisico_quimicas: e.target.value})} />
+            <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.atividade_biologica} onChange={(e) => setCurrentSubstance({...currentSubstance, atividade_biologica: e.target.value})} />
+            <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.uso_tradicional} onChange={(e) => setCurrentSubstance({...currentSubstance, uso_tradicional: e.target.value})} />
+            <div className="flex space-x-3 pt-4 border-t">
+              <button type="submit" className="flex-1 bg-teal-700 text-white font-bold py-2 rounded">Salvar Alterações</button>
+              <button type="button" onClick={() => setIsEditing(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
