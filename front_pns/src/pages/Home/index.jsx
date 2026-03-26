@@ -6,7 +6,7 @@ function Home() {
     <div className="max-w-7xl mx-auto px-4">
       <h1 className="text-center m-12 text-4xl font-light">
         <span className="font-normal tracking-tight text-teal-700">NaturaPREDICT:</span>
-        <span className="text-gray-600"> onde ciência e biodiversidade se conectam!</span>
+        <span className="text-gray-600"> ciência, dados e natureza em um só lugar               !</span>
       </h1>
 
       <p className="text-center font-light pb-4 text-gray-600">

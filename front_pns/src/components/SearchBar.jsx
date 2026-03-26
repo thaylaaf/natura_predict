@@ -4,7 +4,7 @@ import { FaSearch } from 'react-icons/fa';
 
 const SearchBar = ({ searchTerm, setSearchTerm }) => {
   // Simplificamos o placeholder para refletir a busca inteligente
-  const placeholderText = "Pesquise por nome, fórmula, SMILES ou uso medicinal...";
+  const placeholderText = "Pesquise por nome, fórmula, SMILES...";
 
   const handleChange = (e) => {
     setSearchTerm(e.target.value);

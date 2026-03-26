@@ -94,7 +94,6 @@ const verificarToken = (req: any, res: any, next: any) => {
 // rota de cadastro de substancia 
 app.post('/substances', verificarToken, async (req: any, res: Response) => {
   try {
-    // 1. Pegamos exatamente os campos que aparecem no seu pgAdmin
     const { 
       nome, 
       nome_quimico, 
@@ -106,7 +105,7 @@ app.post('/substances', verificarToken, async (req: any, res: Response) => {
       uso_tradicional 
     } = req.body;
 
-    // NOVA VALIDAÇÃO: Verifica se algum campo está faltando ou vazio
+    // Verifica se algum campo está faltando ou vazio
     if (!nome || !nome_quimico || !formula_molecular || !smile || 
         !propriedades_fisico_quimicas || !atividade_biologica || !origem || !uso_tradicional) {
       
