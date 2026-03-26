@@ -201,33 +201,80 @@ app.delete('/substances/:id', verificarToken, async (req: any, res: Response) =>
 
 // --- ROTAS PÚBLICAS ---
 
-app.get('/public/substances', async (req, res) => {
-  const todas = await prisma.substances.findMany({ orderBy: { nome: 'asc' } });
-  res.json(todas);
-});
-
-app.get('/public/substances/:id', async (req, res) => {
-  const sub = await prisma.substances.findUnique({ where: { id: Number(req.params.id) } });
-  sub ? res.json(sub) : res.status(404).json({ erro: "Não encontrada." });
-});
-
 app.get('/public/substances/suggestions', async (req: Request, res: Response) => {
-  const { termo } = req.query;
-  const busca = String(termo || "").trim();
-  if (!busca) return res.json([]);
+  try {
+    const { termo } = req.query;
 
-  const resultados = await prisma.substances.findMany({
-    where: {
-      OR: [
-        { nome: { contains: busca, mode: 'insensitive' } },
-        { nome_quimico: { contains: busca, mode: 'insensitive' } },
-        { origem: { contains: busca, mode: 'insensitive' } },
-      ]
-    },
-    take: 10
-  });
-  res.json(resultados);
+    if (!termo) {
+      return res.json([]);
+    }
+
+    // 1. O .trim() remove espaços inúteis no início e no fim (ex: " Cerrado " -> "Cerrado")
+    // 2. Mantemos o espaço interno para que frases como "Cerrado Brasileiro" funcionem
+    const busca = String(termo).trim();
+    if (busca.length === 0) {
+      return res.json([]);
+    }
+
+    const resultados = await prisma.substances.findMany({
+      where: {
+        OR: [
+          { nome: { contains: busca, mode: 'insensitive' } },
+          { nome_quimico: { contains: busca, mode: 'insensitive' } },
+          { formula_molecular: { contains: busca, mode: 'insensitive' } },
+          { smile: { contains: busca, mode: 'insensitive' } },
+          { propriedades_fisico_quimicas: { contains: busca, mode: 'insensitive' } },
+          { atividade_biologica: { contains: busca, mode: 'insensitive' } },
+          { origem: { contains: busca, mode: 'insensitive' } },
+          { uso_tradicional: { contains: busca, mode: 'insensitive' } },
+        ]
+      },
+      select: {
+        id: true,
+        nome: true,
+        origem: true,
+        propriedades_fisico_quimicas: true 
+      },
+      take: 10
+    });
+
+    res.json(resultados);
+  } catch (error) {
+    console.error("Erro na busca:", error);
+    res.status(500).json({ erro: "Erro ao realizar busca." });
+  }
 });
+
+// 📄 ROTA 2: Ficha Técnica (O que aparece quando o usuário clica em uma planta)
+app.get('/public/substances/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const substancia = await prisma.substances.findUnique({
+      where: { id: Number(id) }
+    });
+
+    if (!substancia) {
+      return res.status(404).json({ erro: "Substância não encontrada." });
+    }
+
+    // Retorna todos os dados obrigatórios que você configurou
+    res.json(substancia);
+  } catch (error) {
+    res.status(500).json({ erro: "Erro ao buscar detalhes." });
+  }
+});
+
+// 📚 ROTA 3: Catálogo Geral (Para listar tudo na página inicial do site)
+app.get('/public/substances', async (req: Request, res: Response) => {
+  try {
+    const todas = await prisma.substances.findMany({
+      orderBy: { nome: 'asc' } // Organiza de A a Z
+    });
+    res.json(todas);
+  } catch (error) {
+    res.status(500).json({ erro: "Erro ao listar PNs." });
+  }})
 
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
