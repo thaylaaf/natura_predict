@@ -4,58 +4,57 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const Header = () => {
   const navigate = useNavigate();
-  
-  // Verifica se o usuário está logado (se existe token)
   const isLogado = !!localStorage.getItem('token');
 
   const handleSair = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('usuarioNome'); 
     navigate('/'); 
-    window.location.reload(); // Recarrega para atualizar o estado do Header
+    window.location.reload();
   };
 
   return (
-    <header className="flex justify-between items-center p-13 bg-[#0F7A73] h-[90px]">
-      <Link to="/" className="flex items-center gap-5.5 hover:opacity-90 transition-opacity">
+    // Ajustado: p-4 em telas pequenas e p-13 em telas grandes. h-auto para não cortar conteúdo.
+    <header className="flex justify-between items-center px-4 md:px-13 bg-[#0F7A73] h-[90px] w-full">
+      
+      {/* Logo e Texto: gap reduzido no mobile */}
+      <Link to="/" className="flex items-center gap-2 md:gap-5.5 hover:opacity-90 transition-opacity shrink-0">
         <img
           src={logo}
           alt="Logo NaturaPREDICT"
-          className="h-[60px] w-auto"
+          // Ajustado: h-[40px] no mobile e h-[60px] no desktop
+          className="h-[40px] md:h-[60px] w-auto"
         />
-        <span className="text-white text-lg font-light tracking-wide">
+        <span className="text-white text-sm md:text-lg font-light tracking-wide">
           NaturaPREDICT
         </span>
       </Link>
 
-      <nav className="flex gap-12 items-center">
+      {/* Nav: gap reduzido drasticamente no mobile */}
+      <nav className="flex gap-3 md:gap-12 items-center">
         <Link
           to="/navegacao"
-          className="text-white no-underline text-base font-light tracking-wide transition hover:underline"
+          // Ajustado: texto menor no mobile (text-xs)
+          className="text-white no-underline text-[12px] sm:text-xs md:text-base font-light tracking-wide transition hover:underline whitespace-nowrap"
         >
-          NAVEGAR POR ATIVOS
+          NAVEGAR
         </Link>
 
-
-        {/* LÓGICA DE MUDANÇA DO BOTÃO */}
         {isLogado ? (
-          <div className="flex gap-6 items-center">
-            {/* Mantemos o link para o Painel para facilitar a navegação */}
-            <Link to="/PainelControle" className="text-white font-bold hover:underline">
+          <div className="flex gap-3 md:gap-6 items-center">
+            <Link to="/PainelControle" className="text-white font-bold hover:underline text-xs md:text-base">
               PAINEL
             </Link>
             
-            {/* BOTÃO SAIR AJUSTADO COM A COR PREDOMINANTE */}
             <button 
               onClick={handleSair}
-              // Usei bg-teal-800 e hover:bg-teal-900 para destacar do fundo teal-700
-              className="text-white bg-teal-800 px-4 py-1.5 rounded-lg hover:bg-teal-900 transition font-medium text-sm"
+              className="text-white bg-teal-800 px-2 py-1 md:px-4 md:py-1.5 rounded-lg hover:bg-teal-900 transition font-medium text-[10px] md:text-sm"
             >
               SAIR
             </button>
           </div>
         ) : (
-          <Link to="/login" className="text-white hover:underline">
+          <Link to="/login" className="text-white hover:underline text-xs md:text-base">
             LOGIN
           </Link>
         )}

@@ -104,22 +104,15 @@ function PainelControle() {
     }
   };
 
-  // --- FUNÇÃO AJUSTADA PARA NOVA LÓGICA (SEM EMAIL) ---
   const handleSaveNewAdmin = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
     try {
-      // Chamada para o backend atualizado
       const response = await axios.post('http://localhost:3000/admins', newAdmin, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
-      // Pega a senha temporária que o backend retornou
       const senhaTemp = response.data.senha_temporaria;
-
-      // Alerta ajustado para mostrar a senha na tela
       alert(`Usuário cadastrado com sucesso!\n\nSenha temporária: ${senhaTemp}\n\nInforme esta senha ao novo administrador.`);
-      
       setIsAddingAdmin(false);
       setNewAdmin({ nome: '', email: '', nivel: 'administrador' });
     } catch (error) {
@@ -130,36 +123,38 @@ function PainelControle() {
   if (loading) return <div className="p-10 text-center">Carregando...</div>;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Painel de Controle</h1>
-        <div className="flex space-x-3">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
+      {/* HEADER DO PAINEL */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800">Painel de Controle</h1>
+        
+        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3">
           {nivelUsuarioLogado === 'super_administrador' && (
-              <>
-                <button 
-                  onClick={() => navigate('/usuarios')} 
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm"
-                >
-                  Ver Usuários
-                </button>
-                <button 
-                  onClick={() => setIsAddingAdmin(true)}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm"
-                >
-                  + Novo Administrador
-                </button>
-              </>
-            )}
-            <button 
-              onClick={() => setIsAdding(true)}
-              className="bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition shadow-sm"
-            >
-              + Nova Substância
-            </button>
-          </div>
+            <>
+              <button 
+                onClick={() => navigate('/usuarios')} 
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm w-full sm:w-auto text-sm"
+              >
+                Ver Usuários
+              </button>
+              <button 
+                onClick={() => setIsAddingAdmin(true)}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm w-full sm:w-auto text-sm"
+              >
+                + Novo Administrador
+              </button>
+            </>
+          )}
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition shadow-sm w-full sm:w-auto text-sm"
+          >
+            + Nova Substância
+          </button>
+        </div>
       </div>
 
-      {/* MODAL DE CADASTRO DE ADMINISTRADOR (Interface original preservada) */}
+      {/* MODAL DE CADASTRO DE ADMINISTRADOR */}
       {isAddingAdmin && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <form onSubmit={handleSaveNewAdmin} className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md space-y-4">
@@ -187,8 +182,8 @@ function PainelControle() {
                 <option value="super_administrador">Super Administrador</option>
               </select>
             </div>
-            <div className="flex space-x-3 pt-4 border-t">
-              <button type="submit" className="flex-1 bg-indigo-600 text-white font-bold py-2 rounded">Finalizar Cadastro</button>
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+              <button type="submit" className="flex-1 bg-indigo-600 text-white font-bold py-2 rounded order-1 sm:order-none">Finalizar Cadastro</button>
               <button type="button" onClick={() => setIsAddingAdmin(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
             </div>
           </form>
@@ -210,37 +205,44 @@ function PainelControle() {
             <textarea placeholder="Propriedades Físico-Químicas" className="w-full border p-2 rounded h-20" onChange={(e) => setNewSubstance({...newSubstance, propriedades_fisico_quimicas: e.target.value})} required />
             <textarea placeholder="Atividade Biológica" className="w-full border p-2 rounded h-20" onChange={(e) => setNewSubstance({...newSubstance, atividade_biologica: e.target.value})} required />
             <textarea placeholder="Uso Tradicional" className="w-full border p-2 rounded h-20" onChange={(e) => setNewSubstance({...newSubstance, uso_tradicional: e.target.value})} required />
-            <div className="flex space-x-3 pt-4 border-t">
-              <button type="submit" className="flex-1 bg-teal-700 text-white font-bold py-2 rounded">Cadastrar</button>
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+              <button type="submit" className="flex-1 bg-teal-700 text-white font-bold py-2 rounded order-1 sm:order-none">Cadastrar</button>
               <button type="button" onClick={() => setIsAdding(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
             </div>
           </form>
         </div>
       )}
 
-      {/* TABELA */}
-      <div className="bg-white shadow-md rounded-lg overflow-hidden border">
-        <table className="w-full text-left">
-          <thead className="bg-gray-100 font-bold">
-            <tr>
-              <th className="p-4 border-b">Nome</th>
-              <th className="p-4 border-b">Origem</th>
-              <th className="p-4 border-b text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {substances.map((sub) => (
-              <tr key={sub.id} className="hover:bg-gray-50 border-b">
-                <td className="p-4">{sub.nome}</td>
-                <td className="p-4">{sub.origem}</td>
-                <td className="p-4 text-center space-x-4">
-                  <button onClick={() => { setCurrentSubstance(sub); setIsEditing(true); }} className="text-blue-600 hover:underline">Editar</button>
-                  <button onClick={() => handleDelete(sub.id)} className="text-red-600 hover:underline">Excluir</button>
-                </td>
+      {/* TABELA COM ORIENTAÇÃO DE SCROLL */}
+      <div className="bg-white shadow-md rounded-lg border">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[500px]">
+            <thead className="bg-gray-100 font-bold">
+              <tr>
+                <th className="p-4 border-b">Nome</th>
+                <th className="p-4 border-b">Origem</th>
+                <th className="p-4 border-b text-center">Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {substances.map((sub) => (
+                <tr key={sub.id} className="hover:bg-gray-50 border-b">
+                  <td className="p-4 text-sm">{sub.nome}</td>
+                  <td className="p-4 text-sm">{sub.origem}</td>
+                  <td className="p-4 text-center space-x-4">
+                    <button onClick={() => { setCurrentSubstance(sub); setIsEditing(true); }} className="text-blue-600 hover:underline text-sm">Editar</button>
+                    <button onClick={() => handleDelete(sub.id)} className="text-red-600 hover:underline text-sm">Excluir</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* TEXTO DE ORIENTAÇÃO (Aparece apenas em telas pequenas) */}
+        <p className="text-[10px] text-gray-400 p-2 text-center sm:hidden italic border-t">
+          * Deslize para o lado para ver todas as ações
+        </p>
       </div>
 
       {/* MODAL DE EDIÇÃO */}
@@ -258,8 +260,8 @@ function PainelControle() {
             <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.propriedades_fisico_quimicas} onChange={(e) => setCurrentSubstance({...currentSubstance, propriedades_fisico_quimicas: e.target.value})} />
             <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.atividade_biologica} onChange={(e) => setCurrentSubstance({...currentSubstance, atividade_biologica: e.target.value})} />
             <textarea className="w-full border p-2 rounded h-20" value={currentSubstance.uso_tradicional} onChange={(e) => setCurrentSubstance({...currentSubstance, uso_tradicional: e.target.value})} />
-            <div className="flex space-x-3 pt-4 border-t">
-              <button type="submit" className="flex-1 bg-teal-700 text-white font-bold py-2 rounded">Salvar Alterações</button>
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+              <button type="submit" className="flex-1 bg-teal-700 text-white font-bold py-2 rounded order-1 sm:order-none">Salvar Alterações</button>
               <button type="button" onClick={() => setIsEditing(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
             </div>
           </form>

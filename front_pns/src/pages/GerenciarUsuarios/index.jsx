@@ -12,7 +12,7 @@ function GerenciarUsuarios() {
     const token = localStorage.getItem('token');
     const nivel = localStorage.getItem('nivel');
     if (!token || nivel !== 'super_administrador') {
-      navigate('/painel'); // Volta se não for super_admin
+      navigate('/PainelControle'); // Ajustado para a rota correta que você usa
     }
   }, [navigate]);
 
@@ -32,7 +32,7 @@ function GerenciarUsuarios() {
 
   useEffect(() => { fetchUsuarios(); }, []);
 
-  // 🗑️ DELETAR USUÁRIO (Igual lógica das substâncias)
+  // 🗑️ DELETAR USUÁRIO
   const handleDelete = async (id) => {
     if (!confirm("Tem certeza que deseja remover este administrador?")) return;
     const token = localStorage.getItem('token');
@@ -49,52 +49,67 @@ function GerenciarUsuarios() {
   if (loading) return <div className="p-10 text-center">Carregando usuários...</div>;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
           <button 
             onClick={() => navigate('/PainelControle')} 
-            className="text-teal-700 hover:underline mb-2 block"
+            className="text-teal-700 hover:underline mb-2 flex items-center gap-1 text-sm md:text-base"
           >
-            ← Voltar ao Painel
+            ← <span className="hidden sm:inline">Voltar ao Painel</span>
+            <span className="sm:hidden">Voltar</span>
           </button>
-          <h1 className="text-2xl font-bold text-gray-800">Administradores do Sistema</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Administradores do Sistema</h1>
         </div>
       </div>
 
-      {/* TABELA - MESMO ESTILO DA TABELA DE SUBSTÂNCIAS */}
-      <div className="bg-white shadow-md rounded-lg overflow-hidden border">
-        <table className="w-full text-left">
-          <thead className="bg-gray-100 font-bold">
-            <tr>
-              <th className="p-4 border-b">Nome</th>
-              <th className="p-4 border-b">E-mail</th>
-              <th className="p-4 border-b">Nível</th>
-              <th className="p-4 border-b text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {usuarios.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50 border-b">
-                <td className="p-4">{user.nome}</td>
-                <td className="p-4">{user.email}</td>
-                <td className="p-4 capitalize">{user.nivel.replace('_', ' ')}</td>
-                <td className="p-4 text-center">
-                  <button 
-                    onClick={() => handleDelete(user.id)} 
-                    className="text-red-600 hover:underline"
-                  >
-                    Excluir
-                  </button>
-                </td>
+      {/* ATUALIZAÇÃO DE RESPONSIVIDADE:
+          O container abaixo permite o scroll horizontal apenas na tabela 
+      */}
+      <div className="bg-white shadow-md rounded-lg border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[600px]">
+            <thead className="bg-gray-100 font-bold">
+              <tr>
+                <th className="p-4 border-b text-sm md:text-base">Nome</th>
+                <th className="p-4 border-b text-sm md:text-base">E-mail</th>
+                <th className="p-4 border-b text-sm md:text-base">Nível</th>
+                <th className="p-4 border-b text-center text-sm md:text-base">Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {usuarios.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50 border-b">
+                  <td className="p-4 text-sm whitespace-nowrap">{user.nome}</td>
+                  <td className="p-4 text-sm">{user.email}</td>
+                  <td className="p-4 text-sm capitalize">
+                    {user.nivel ? user.nivel.replace('_', ' ') : ''}
+                  </td>
+                  <td className="p-4 text-center">
+                    <button 
+                      onClick={() => handleDelete(user.id)} 
+                      className="text-red-600 hover:underline text-sm font-medium"
+                    >
+                      Excluir
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
         {usuarios.length === 0 && (
-          <div className="p-10 text-center text-gray-400">Nenhum administrador encontrado.</div>
+          <div className="p-10 text-center text-gray-400">
+            Nenhum administrador encontrado.
+          </div>
         )}
       </div>
+
+      {/* Aviso visual para o usuário mobile */}
+      <p className="text-[10px] text-gray-400 mt-2 text-center sm:hidden italic">
+        * Deslize para o lado para ver todas as informações
+      </p>
     </div>
   );
 }
