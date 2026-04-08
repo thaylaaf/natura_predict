@@ -1,220 +1,267 @@
+
+
 import bcrypt from 'bcrypt';
+// Importa o "dotenv" para carregar o .env
 import jwt from 'jsonwebtoken';
+///importa o token
 import * as dotenv from 'dotenv';
+dotenv.config(); // Isso "lê" o seu .env e o prepara
+
+// Importa o Express e os tipos (Request, Response)
 import express, { Request, Response } from 'express';
-import cors from 'cors';
+
+// Importa o PrismaClient
 import { PrismaClient } from '@prisma/client';
 
-dotenv.config();
-
-const app = express();
+// Cria a instância do Prisma e do Express
 const prisma = new PrismaClient();
+const app = express();
 const port = 3000;
 
-app.use(cors());
+// Configura o Express para "entender" JSON
 app.use(express.json());
 
-// --- MIDDLEWARE DE SEGURANÇA ---
+// Manda o servidor "ligar"
+app.listen(port, () => {
+  console.log(`Servidor TS rodando em http://localhost:${port}`);
+});
+
+// Rota de Login: A "recepção" do seu prédio
+app.post('/login', async (req: Request, res: Response) => {
+  try {
+    const { email, senha } = req.body;
+
+    // 1. Procura o administrador pelo e-mail
+    const admin = await prisma.admins.findUnique({ where: { email } });
+
+    // 2. Se não achar o e-mail ou a senha estiver errada
+    if (!admin) {
+      return res.status(401).json({ erro: "Credenciais inválidas." });
+    }
+
+    // 3. Verifica se a senha bate com o que está no banco
+    const senhaValida = await bcrypt.compare(senha, admin.senha || "");
+
+    if (!senhaValida) {
+      return res.status(401).json({ erro: "Credenciais inválidas." });
+    }
+
+    // 4. Cria o "Crachá Digital" (Token) assinado com sua Chave Secreta
+    const token = jwt.sign(
+      { id: admin.id, nivel: admin.nivel }, // Informações salvas dentro do token
+      process.env.JWT_SECRET as string,     // Sua chave do .env
+      { expiresIn: '1d' }                   // O token expira em 1 dia
+    );
+
+    // 5. Devolve o token para o usuário
+    res.json({ token, nome: admin.nome, nivel: admin.nivel });
+  } catch (error) {
+    res.status(500).json({ erro: "Erro no servidor." });
+  }
+});
+
+// Middleware: O "Segurança" que verifica o crachá
 const verificarToken = (req: any, res: any, next: any) => {
-  const token = req.headers['authorization']?.split(' ')[1];
+  const token = req.headers['authorization']?.split(' ')[1]; // Pega o token do cabeçalho
 
   if (!token) {
     return res.status(401).json({ erro: "Acesso negado. Faça login primeiro." });
   }
 
   try {
+    // Verifica se o token foi assinado com a nossa chave secreta
     const dadosVerificados = jwt.verify(token, process.env.JWT_SECRET as string) as any;
+    
+    // Salva os dados do usuário dentro da requisição para as próximas funções usarem
     req.usuarioLogado = dadosVerificados; 
-    next();
+    
+    next(); // "Pode passar!"
   } catch (err) {
     res.status(403).json({ erro: "Token inválido ou expirado." });
   }
 };
 
-// --- ROTAS DE AUTENTICAÇÃO ---
-
-// Login
-app.post('/login', async (req: Request, res: Response) => {
+// rota de cadastro de substancia 
+app.post('/substances', verificarToken, async (req: any, res: Response) => {
   try {
-    const { email, senha } = req.body;
-    const admin = await prisma.admins.findUnique({ where: { email } });
+    // 1. Pegamos exatamente os campos que aparecem no seu pgAdmin
+    const { 
+      nome, 
+      nome_quimico, 
+      formula_molecular, 
+      smile, 
+      propriedades_fisico_quimicas, 
+      origem, 
+      atividade_biologica,
+      uso_tradicional 
+    } = req.body;
 
-    if (!admin || !admin.senha) {
-      return res.status(401).json({ erro: "Credenciais inválidas." });
-    }
-
-    const senhaValida = await bcrypt.compare(senha, admin.senha);
-    if (!senhaValida) {
-      return res.status(401).json({ erro: "Credenciais inválidas." });
-    }
-
-    const token = jwt.sign(
-      { id: admin.id, nivel: admin.nivel },
-      process.env.JWT_SECRET as string,
-      { expiresIn: '1d' }
-    );
-
-    // Retorna se o usuário precisa mudar a senha
-    res.json({ 
-      token, 
-      nome: admin.nome, 
-      nivel: admin.nivel,
-      mudar_senha: admin.mudar_senha 
-    });
-  } catch (error) {
-    res.status(500).json({ erro: "Erro no servidor." });
-  }
-});
-
-// Define o padrão: Mínimo 6 caracteres, 1 Maiúscula, 1 Número e 1 Especial
-const senhaForteRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+={}\[\]:;<>|./?-]).{6,}$/;
-
-// --- ROTA DE ATUALIZAÇÃO (Onde o usuário muda a senha dele) ---
-app.put('/auth/atualizar-senha', verificarToken, async (req: any, res: Response) => {
-  try {
-    const { novaSenha } = req.body;
-    const userId = req.usuarioLogado.id;
-
-    // VALIDACÃO CRUCIAL AQUI
-    if (!senhaForteRegex.test(novaSenha)) {
+    // NOVA VALIDAÇÃO: Verifica se algum campo está faltando ou vazio
+    if (!nome || !nome_quimico || !formula_molecular || !smile || 
+        !propriedades_fisico_quimicas || !origem || !atividade_biologica || !uso_tradicional) {
+      
       return res.status(400).json({ 
-        erro: "Senha fraca! Use pelo menos 6 caracteres, uma letra maiúscula, um número e um caractere especial." 
+        erro: "Todos os campos devem ser preenchidos." 
       });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const senhaHash = await bcrypt.hash(novaSenha, salt);
-
-    await prisma.admins.update({
-      where: { id: Number(userId) }, // Garanta que o ID seja um número
+    // 2. Criamos no banco usando o Prisma
+    const novaSubstancia = await prisma.substances.create({
       data: {
-        senha: senhaHash,
-        mudar_senha: false
-      }
+        nome,
+        nome_quimico,
+        formula_molecular,
+        smile,
+        propriedades_fisico_quimicas,
+        origem,
+        atividade_biologica,
+        uso_tradicional
+      },
     });
 
-    res.json({ mensagem: "Senha atualizada com sucesso!" });
+    res.status(201).json(novaSubstancia);
   } catch (error) {
-    res.status(500).json({ erro: "Erro ao atualizar senha." });
+    console.error(error);
+    res.status(400).json({ erro: 'Falha ao cadastrar substância. Verifique os campos enviados.' });
   }
 });
 
-// --- GESTÃO DE USUÁRIOS (ADMINS) ---
-
-// Listar Admins (Apenas Super Admin)
-app.get('/admins', verificarToken, async (req: any, res: Response) => {
+// Rota para editar substância: usa o ID na URL e o Token para segurança
+app.put('/substances/:id', verificarToken, async (req: any, res: Response) => {
   try {
-    if (req.usuarioLogado.nivel !== 'super_administrador') {
-      return res.status(403).json({ erro: "Acesso negado." });
-    }
+    const { id } = req.params; // Pega o ID da planta (ex: 3 para o Guaco)
+    
+    // Pegamos os campos que podem ser editados
+    const { 
+      nome, 
+      nome_quimico, 
+      formula_molecular, 
+      smile, 
+      propriedades_fisico_quimicas, 
+      origem, 
+      uso_tradicional 
+    } = req.body;
 
-    const todosAdmins = await prisma.admins.findMany({
-      select: { id: true, nome: true, email: true, nivel: true, mudar_senha: true, created_at: true }
+    // Atualizamos no banco de dados usando o Prisma
+    const substanciaAtualizada = await prisma.substances.update({
+      where: { id: Number(id) },
+      data: {
+        nome,
+        nome_quimico,
+        formula_molecular,
+        smile,
+        propriedades_fisico_quimicas,
+        origem,
+        uso_tradicional
+      },
     });
-    res.json(todosAdmins);
+
+    res.json({ mensagem: "Substância atualizada com sucesso!", dados: substanciaAtualizada });
   } catch (error) {
-    res.status(500).json({ erro: "Erro ao buscar administradores." });
+    console.error(error);
+    res.status(400).json({ erro: "Erro ao atualizar. Verifique se o ID existe ou se os campos estão corretos." });
   }
 });
 
-// Cadastrar Novo Admin com Senha Genérica
+// Rota para deletar: usa o ID da URL e o Token de quem está logado
+app.delete('/substances/:id', verificarToken, async (req: any, res: Response) => {
+  try {
+    const { id } = req.params; // Pega o "1" da URL /substances/1
+
+    await prisma.substances.delete({
+      where: { id: Number(id) },
+    });
+
+    res.json({ mensagem: "Substância removida com sucesso!" });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ erro: "Erro ao remover substância. Verifique se o ID existe." });
+  }
+});
+
+//rota para cadastro de administrador, só o super admin faz
 app.post('/admins', verificarToken, async (req: any, res: Response) => {
   try {
-    const { nome, email, nivel } = req.body;
+    // 1. Não pegamos mais o idDoSolicitante do body!
+    const { nome, email, senha, nivel } = req.body;
 
+    // 2. Trava de segurança: Usamos o nível que veio direto do crachá (Token)
     if (req.usuarioLogado.nivel !== 'super_administrador') {
-      return res.status(403).json({ erro: "Acesso negado." });
+      return res.status(403).json({ erro: "Acesso negado. Apenas super_admins criam usuários." });
     }
 
-    const existe = await prisma.admins.findUnique({ where: { email } });
-    if (existe) return res.status(400).json({ erro: "E-mail já cadastrado." });
+    const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-    const senhaGenerica = "Mudar@123";
-    const salt = await bcrypt.genSalt(10);
-    const senhaHash = await bcrypt.hash(senhaGenerica, salt);
-
-    const novo = await prisma.admins.create({
+    const novoAdmin = await prisma.admins.create({
       data: {
         nome,
         email,
-        senha: senhaHash,
-        nivel: nivel || "administrador",
-        mudar_senha: true
-      }
+        senha: senhaCriptografada,
+        nivel: nivel || "administrador"
+      },
     });
 
-    res.status(201).json({ 
-      mensagem: "Admin cadastrado!", 
-      senha_temporaria: senhaGenerica,
-      id: novo.id 
-    });
+    const { senha: _, ...adminSemSenha } = novoAdmin;
+    res.status(201).json(adminSemSenha);
+
   } catch (error) {
-    res.status(500).json({ erro: "Erro ao cadastrar administrador." });
+    res.status(400).json({ erro: 'Falha ao cadastrar administrador.' });
   }
 });
 
-// Deletar Admin
+// Rota para remover um administrador (Apenas super_administrador)
 app.delete('/admins/:id', verificarToken, async (req: any, res: Response) => {
   try {
+    // 🛡️ Trava de segurança: só super_administrador deleta pessoas
     if (req.usuarioLogado.nivel !== 'super_administrador') {
       return res.status(403).json({ erro: "Acesso negado." });
     }
-    await prisma.admins.delete({ where: { id: Number(req.params.id) } });
+
+    const { id } = req.params;
+    await prisma.admins.delete({ where: { id: Number(id) } });
+
     res.json({ mensagem: "Administrador removido!" });
   } catch (error) {
     res.status(400).json({ erro: "Erro ao remover administrador." });
   }
 });
 
-// --- GESTÃO DE SUBSTÂNCIAS ---
 
-app.post('/substances', verificarToken, async (req: any, res: Response) => {
-  try {
-    const data = req.body;
-    const nova = await prisma.substances.create({ data });
-    res.status(201).json(nova);
-  } catch (error) {
-    res.status(400).json({ erro: 'Erro ao cadastrar substância.' });
-  }
-});
 
-app.put('/substances/:id', verificarToken, async (req: any, res: Response) => {
+// rota para listar todos os administradores para gerenciamento
+app.get('/admins', verificarToken, async (req: any, res: Response) => {
   try {
-    const atualizada = await prisma.substances.update({
-      where: { id: Number(req.params.id) },
-      data: req.body
+    // Opcional: Você pode travar para que só o super_admin veja a lista completa
+    if (req.usuarioLogado.nivel !== 'super_administrador') {
+      return res.status(403).json({ erro: "Apenas super_admins podem listar usuários." });
+    }
+
+    const todosAdmins = await prisma.admins.findMany({
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        nivel: true, // Adicionado para você saber quem é quem
+        created_at: true,
+      }
     });
-    res.json(atualizada);
+
+    res.json(todosAdmins);
   } catch (error) {
-    res.status(400).json({ erro: "Erro ao atualizar." });
+    res.status(500).json({ erro: "Erro ao buscar administradores." });
   }
 });
 
-app.delete('/substances/:id', verificarToken, async (req: any, res: Response) => {
-  try {
-    await prisma.substances.delete({ where: { id: Number(req.params.id) } });
-    res.json({ mensagem: "Removida!" });
-  } catch (error) {
-    res.status(400).json({ erro: "Erro ao remover." });
-  }
-});
-
-// --- ROTAS PÚBLICAS ---
-
+// 🔍 ROTA DE BUSCA GLOBAL: Pesquisa o termo em qualquer coluna do banco
 app.get('/public/substances/suggestions', async (req: Request, res: Response) => {
   try {
     const { termo } = req.query;
 
     if (!termo) {
-      return res.json([]);
+      return res.json([]); // Retorna lista vazia se não houver pesquisa
     }
 
-    // 1. O .trim() remove espaços inúteis no início e no fim (ex: " Cerrado " -> "Cerrado")
-    // 2. Mantemos o espaço interno para que frases como "Cerrado Brasileiro" funcionem
-    const busca = String(termo).trim();
-    if (busca.length === 0) {
-      return res.json([]);
-    }
+    const busca = String(termo);
 
     const resultados = await prisma.substances.findMany({
       where: {
@@ -224,7 +271,6 @@ app.get('/public/substances/suggestions', async (req: Request, res: Response) =>
           { formula_molecular: { contains: busca, mode: 'insensitive' } },
           { smile: { contains: busca, mode: 'insensitive' } },
           { propriedades_fisico_quimicas: { contains: busca, mode: 'insensitive' } },
-          { atividade_biologica: { contains: busca, mode: 'insensitive' } },
           { origem: { contains: busca, mode: 'insensitive' } },
           { uso_tradicional: { contains: busca, mode: 'insensitive' } },
         ]
@@ -233,14 +279,15 @@ app.get('/public/substances/suggestions', async (req: Request, res: Response) =>
         id: true,
         nome: true,
         origem: true,
+        // Incluímos um "resumo" para o usuário saber por que aquele item apareceu
         propriedades_fisico_quimicas: true 
       },
-      take: 10
+      take: 10 // Mostra até 10 resultados por vez
     });
 
     res.json(resultados);
   } catch (error) {
-    console.error("Erro na busca:", error);
+    console.error(error);
     res.status(500).json({ erro: "Erro ao realizar busca." });
   }
 });
@@ -274,8 +321,5 @@ app.get('/public/substances', async (req: Request, res: Response) => {
     res.json(todas);
   } catch (error) {
     res.status(500).json({ erro: "Erro ao listar PNs." });
-  }})
-
-app.listen(port, () => {
-  console.log(`Servidor rodando em http://localhost:${port}`);
+  }
 });
