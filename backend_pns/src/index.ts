@@ -1,4 +1,4 @@
-
+import cors from 'cors';
 
 import bcrypt from 'bcrypt';
 // Importa o "dotenv" para carregar o .env
@@ -16,6 +16,7 @@ import { PrismaClient } from '@prisma/client';
 // Cria a instância do Prisma e do Express
 const prisma = new PrismaClient();
 const app = express();
+app.use(cors());
 const port = process.env.PORT || 3000;
 
 // Configura o Express para "entender" JSON
