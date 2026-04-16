@@ -22,7 +22,7 @@ function App() {
         <main className="flex-grow"> {/* O conteúdo das páginas entra aqui */}
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/Login" element={<Login />} />
             <Route path="/PainelControle" element={<PainelControle />} />
             <Route path="/substance/:id" element={<MoleculeDisplay />} />
             <Route path="/Navegacao" element={<Navegacao />} />
