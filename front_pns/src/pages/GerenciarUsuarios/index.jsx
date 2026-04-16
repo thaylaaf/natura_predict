@@ -19,7 +19,7 @@ function GerenciarUsuarios() {
   const fetchUsuarios = async () => {
     const token = localStorage.getItem('token');
     try {
-      const response = await axios.get('http://localhost:3000/admins', {
+      const response = await axios.get('https://natura-predict.onrender.com/admins', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsuarios(response.data);
@@ -37,7 +37,7 @@ function GerenciarUsuarios() {
     if (!confirm("Tem certeza que deseja remover este administrador?")) return;
     const token = localStorage.getItem('token');
     try {
-      await axios.delete(`http://localhost:3000/admins/${id}`, {
+      await axios.delete(`https://natura-predict.onrender.com/admins/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchUsuarios(); // Recarrega a lista

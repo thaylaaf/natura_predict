@@ -33,7 +33,7 @@ const SearchContainer = () => {
     setSearchPerformed(false); 
 
     try {
-      const response = await axios.get(`http://localhost:3000/public/substances/suggestions`, {
+      const response = await axios.get(`https://natura-predict.onrender.com/public/substances/suggestions`, {
         params: { termo: termToSearch }
       });
       

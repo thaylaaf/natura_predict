@@ -13,7 +13,7 @@ function Login() {
     setError(''); 
 
     try {
-      const response = await axios.post('http://localhost:3000/login', {
+      const response = await axios.post('https://natura-predict.onrender.com/login', {
         email: email,
         senha: password 
       });

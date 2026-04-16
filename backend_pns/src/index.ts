@@ -16,14 +16,14 @@ import { PrismaClient } from '@prisma/client';
 // Cria a instância do Prisma e do Express
 const prisma = new PrismaClient();
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Configura o Express para "entender" JSON
 app.use(express.json());
 
 // Manda o servidor "ligar"
 app.listen(port, () => {
-  console.log(`Servidor TS rodando em http://localhost:${port}`);
+  console.log(`Servidor TS rodando em https://natura-predict.onrender.com:${port}`);
 });
 
 // Rota de Login: A "recepção" do seu prédio
