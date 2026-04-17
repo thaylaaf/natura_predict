@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import SearchContainer from './containers/SearchContainer';
 import MoleculeDisplay from './components/MoleculeDisplay';
 import Home from './pages/Home';
-import Login from './pages/login/index';
+import Login from './pages/Login/index';
 import PainelControle from './pages/PainelControle';
 import Navegacao from './pages/Navegacao';
 import DefinirSenha from './pages/DefinirSenha';
