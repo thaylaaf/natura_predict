@@ -1,5 +1,4 @@
 import cors from 'cors';
-
 import bcrypt from 'bcrypt';
 // Importa o "dotenv" para carregar o .env
 import jwt from 'jsonwebtoken';
@@ -16,7 +15,15 @@ import { PrismaClient } from '@prisma/client';
 // Cria a instância do Prisma e do Express
 const prisma = new PrismaClient();
 const app = express();
-app.use(cors());
+
+// --- ALTERAÇÃO AQUI: Configuração do CORS para aceitar a Vercel ---
+app.use(cors({
+  origin: ['https://natura-predict.vercel.app', 'http://localhost:5173'], // Aceita seu site e o seu teste local
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+// ----------------------------------------------------------------
+
 const port = process.env.PORT || 3000;
 
 // Configura o Express para "entender" JSON
@@ -24,7 +31,7 @@ app.use(express.json());
 
 // Manda o servidor "ligar"
 app.listen(port, () => {
-  console.log(`Servidor TS rodando em https://natura-predict.onrender.com:${port}`);
+  console.log(`Servidor rodando na porta ${port}`);
 });
 
 // Rota de Login: A "recepção" do seu prédio
@@ -85,7 +92,6 @@ const verificarToken = (req: any, res: any, next: any) => {
 // rota de cadastro de substancia 
 app.post('/substances', verificarToken, async (req: any, res: Response) => {
   try {
-    // 1. Pegamos exatamente os campos que aparecem no seu pgAdmin
     const { 
       nome, 
       nome_quimico, 
@@ -97,7 +103,6 @@ app.post('/substances', verificarToken, async (req: any, res: Response) => {
       uso_tradicional 
     } = req.body;
 
-    // NOVA VALIDAÇÃO: Verifica se algum campo está faltando ou vazio
     if (!nome || !nome_quimico || !formula_molecular || !smile || 
         !propriedades_fisico_quimicas || !origem || !atividade_biologica || !uso_tradicional) {
       
@@ -106,7 +111,6 @@ app.post('/substances', verificarToken, async (req: any, res: Response) => {
       });
     }
 
-    // 2. Criamos no banco usando o Prisma
     const novaSubstancia = await prisma.substances.create({
       data: {
         nome,
@@ -127,12 +131,11 @@ app.post('/substances', verificarToken, async (req: any, res: Response) => {
   }
 });
 
-// Rota para editar substância: usa o ID na URL e o Token para segurança
+// Rota para editar substância
 app.put('/substances/:id', verificarToken, async (req: any, res: Response) => {
   try {
-    const { id } = req.params; // Pega o ID da planta (ex: 3 para o Guaco)
+    const { id } = req.params; 
     
-    // Pegamos os campos que podem ser editados
     const { 
       nome, 
       nome_quimico, 
@@ -143,7 +146,6 @@ app.put('/substances/:id', verificarToken, async (req: any, res: Response) => {
       uso_tradicional 
     } = req.body;
 
-    // Atualizamos no banco de dados usando o Prisma
     const substanciaAtualizada = await prisma.substances.update({
       where: { id: Number(id) },
       data: {
@@ -164,10 +166,10 @@ app.put('/substances/:id', verificarToken, async (req: any, res: Response) => {
   }
 });
 
-// Rota para deletar: usa o ID da URL e o Token de quem está logado
+// Rota para deletar
 app.delete('/substances/:id', verificarToken, async (req: any, res: Response) => {
   try {
-    const { id } = req.params; // Pega o "1" da URL /substances/1
+    const { id } = req.params;
 
     await prisma.substances.delete({
       where: { id: Number(id) },
@@ -180,13 +182,11 @@ app.delete('/substances/:id', verificarToken, async (req: any, res: Response) =>
   }
 });
 
-//rota para cadastro de administrador, só o super admin faz
+// rota para cadastro de administrador
 app.post('/admins', verificarToken, async (req: any, res: Response) => {
   try {
-    // 1. Não pegamos mais o idDoSolicitante do body!
     const { nome, email, senha, nivel } = req.body;
 
-    // 2. Trava de segurança: Usamos o nível que veio direto do crachá (Token)
     if (req.usuarioLogado.nivel !== 'super_administrador') {
       return res.status(403).json({ erro: "Acesso negado. Apenas super_admins criam usuários." });
     }
@@ -210,10 +210,9 @@ app.post('/admins', verificarToken, async (req: any, res: Response) => {
   }
 });
 
-// Rota para remover um administrador (Apenas super_administrador)
+// Rota para remover um administrador
 app.delete('/admins/:id', verificarToken, async (req: any, res: Response) => {
   try {
-    // 🛡️ Trava de segurança: só super_administrador deleta pessoas
     if (req.usuarioLogado.nivel !== 'super_administrador') {
       return res.status(403).json({ erro: "Acesso negado." });
     }
@@ -227,12 +226,9 @@ app.delete('/admins/:id', verificarToken, async (req: any, res: Response) => {
   }
 });
 
-
-
-// rota para listar todos os administradores para gerenciamento
+// rota para listar todos os administradores
 app.get('/admins', verificarToken, async (req: any, res: Response) => {
   try {
-    // Opcional: Você pode travar para que só o super_admin veja a lista completa
     if (req.usuarioLogado.nivel !== 'super_administrador') {
       return res.status(403).json({ erro: "Apenas super_admins podem listar usuários." });
     }
@@ -242,7 +238,7 @@ app.get('/admins', verificarToken, async (req: any, res: Response) => {
         id: true,
         nome: true,
         email: true,
-        nivel: true, // Adicionado para você saber quem é quem
+        nivel: true,
         created_at: true,
       }
     });
@@ -253,13 +249,13 @@ app.get('/admins', verificarToken, async (req: any, res: Response) => {
   }
 });
 
-// 🔍 ROTA DE BUSCA GLOBAL: Pesquisa o termo em qualquer coluna do banco
+// 🔍 ROTA DE BUSCA GLOBAL
 app.get('/public/substances/suggestions', async (req: Request, res: Response) => {
   try {
     const { termo } = req.query;
 
     if (!termo) {
-      return res.json([]); // Retorna lista vazia se não houver pesquisa
+      return res.json([]); 
     }
 
     const busca = String(termo);
@@ -280,10 +276,9 @@ app.get('/public/substances/suggestions', async (req: Request, res: Response) =>
         id: true,
         nome: true,
         origem: true,
-        // Incluímos um "resumo" para o usuário saber por que aquele item apareceu
         propriedades_fisico_quimicas: true 
       },
-      take: 10 // Mostra até 10 resultados por vez
+      take: 10 
     });
 
     res.json(resultados);
@@ -293,7 +288,7 @@ app.get('/public/substances/suggestions', async (req: Request, res: Response) =>
   }
 });
 
-// 📄 ROTA 2: Ficha Técnica (O que aparece quando o usuário clica em uma planta)
+// 📄 ROTA 2: Ficha Técnica
 app.get('/public/substances/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -306,18 +301,17 @@ app.get('/public/substances/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ erro: "Substância não encontrada." });
     }
 
-    // Retorna todos os dados obrigatórios que você configurou
     res.json(substancia);
   } catch (error) {
     res.status(500).json({ erro: "Erro ao buscar detalhes." });
   }
 });
 
-// 📚 ROTA 3: Catálogo Geral (Para listar tudo na página inicial do site)
+// 📚 ROTA 3: Catálogo Geral
 app.get('/public/substances', async (req: Request, res: Response) => {
   try {
     const todas = await prisma.substances.findMany({
-      orderBy: { nome: 'asc' } // Organiza de A a Z
+      orderBy: { nome: 'asc' } 
     });
     res.json(todas);
   } catch (error) {
