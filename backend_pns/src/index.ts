@@ -17,11 +17,7 @@ const prisma = new PrismaClient();
 const app = express();
 
 // --- ALTERAÇÃO AQUI: Configuração do CORS para aceitar a Vercel ---
-app.use(cors({
-  origin: ['https://natura-predict.vercel.app', 'http://localhost:5173'], // Aceita seu site e o seu teste local
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 // ----------------------------------------------------------------
 
 const port = process.env.PORT || 3000;
