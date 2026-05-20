@@ -10,7 +10,7 @@ function Navegacao() {
     const fetchSubstances = async () => {
       try {
         // Usamos a mesma rota pública que o seu Painel usa para listar
-        const response = await axios.get('https://natura-predict.onrender.com/public/substances');
+        const response = await axios.get('http://localhost:3000/public/substances');
         setSubstances(response.data);
       } catch (error) {
         console.error("Erro ao carregar substâncias:", error);

@@ -13,7 +13,7 @@ const MoleculeDisplay = () => {
     const fetchMoleculeData = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get(`https://natura-predict.onrender.com/public/substances/${id}`);
+        const response = await axios.get(`http://localhost:3000/public/substances/${id}`);
         setMoleculeData(response.data);
       } catch (err) {
         console.error("Erro ao buscar detalhes:", err);

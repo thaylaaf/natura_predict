@@ -39,7 +39,7 @@ function AtualizarSenha() {
       const token = localStorage.getItem('token');
       
       // 3. Envio para o backend
-      await axios.put('https://natura-predict.onrender.com/auth/atualizar-senha', 
+      await axios.put('http://localhost:3000/auth/atualizar-senha', 
         { novaSenha: novaSenha },
         { headers: { Authorization: `Bearer ${token}` } }
       );

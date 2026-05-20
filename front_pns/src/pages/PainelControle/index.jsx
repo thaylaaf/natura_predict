@@ -47,7 +47,7 @@ function PainelControle() {
   // 🔍 BUSCA
   const fetchSubstances = async () => {
     try {
-      const response = await axios.get('https://natura-predict.onrender.com/public/substances');
+      const response = await axios.get('http://localhost:3000/public/substances');
       setSubstances(response.data);
       setLoading(false);
     } catch (error) {
@@ -63,7 +63,7 @@ function PainelControle() {
     if (!confirm("Excluir substância?")) return;
     const token = localStorage.getItem('token');
     try {
-      await axios.delete(`https://natura-predict.onrender.com/substances/${id}`, {
+      await axios.delete(`http://localhost:3000/substances/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchSubstances();
@@ -75,7 +75,7 @@ function PainelControle() {
     e.preventDefault();
     const token = localStorage.getItem('token');
     try {
-      await axios.put(`https://natura-predict.onrender.com/substances/${currentSubstance.id}`, currentSubstance, {
+      await axios.put(`http://localhost:3000/substances/${currentSubstance.id}`, currentSubstance, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsEditing(false);
@@ -88,7 +88,7 @@ function PainelControle() {
     e.preventDefault();
     const token = localStorage.getItem('token');
     try {
-      await axios.post('https://natura-predict.onrender.com/substances', newSubstance, {
+      await axios.post('http://localhost:3000/substances', newSubstance, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert("Substância cadastrada com sucesso!");
@@ -108,7 +108,7 @@ function PainelControle() {
     e.preventDefault();
     const token = localStorage.getItem('token');
     try {
-      const response = await axios.post('https://natura-predict.onrender.com/admins', newAdmin, {
+      const response = await axios.post('http://localhost:3000/admins', newAdmin, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const senhaTemp = response.data.senha_temporaria;
